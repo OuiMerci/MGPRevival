@@ -12,6 +12,7 @@ public class InputManager : MonoBehaviour {
     private const int MAX_RAYCAST_DISTANCE = 25;
     private GameManager _gameManager = null;
     private PlayerBehaviour _player = null;
+    private WandBehaviour _wand = null;
     private int _backgroundLayerMask = 0;
     #endregion Fields
 
@@ -31,7 +32,8 @@ public class InputManager : MonoBehaviour {
     // Use this for initialization
     void Start () {
         _player = PlayerBehaviour.Instance;
-	}
+        _wand = WandBehaviour.Instance;
+    }
 	
 	// Update is called once per frame
 	void Update () {
@@ -39,18 +41,23 @@ public class InputManager : MonoBehaviour {
         //Check aiming state
         if(Input.GetButtonDown("Aim"))
         {
-            // Update player's state
-            _player.SetAimingState(true);
-
-            // Time is slowed down while the player aims
-            Time.timeScale = _timeSlowRatio;
+            if(_wand.IsWithPlayer)
+            {
+                StartAiming();
+            }
+            else if(_wand.CanTeleport)
+            {
+                _player.TeleportToWand();
+            }
         }
         else if (Input.GetButtonUp("Aim"))
         {
             if(_player.IsAiming)
             {
                 OnAimingEnd();
-                // Do Stick throw here ?
+
+                Vector3 aim = GetAimInput();
+                _player.ThrowWand(aim);
             }
         }
 
@@ -60,6 +67,7 @@ public class InputManager : MonoBehaviour {
             if(Input.GetButtonDown("AimCancel"))
             {
                 OnAimingEnd();
+                _wand.SetVisible(false);
             }
             else
             {
@@ -82,19 +90,16 @@ public class InputManager : MonoBehaviour {
 
     void ApplyAimingInput()
     {
-        float aimH = Input.GetAxis("Horizontal");
-        float aimV = Input.GetAxis("Vertical") * -1; //Reverse the Y axis for more intuitive movement (= normal)
+        Vector2 aim = GetAimInput();
 
         //Debug.Log(" axis = " + aimH + "    " + aimV + "  get  : " + Input.GetAxisRaw("AimH") + "     " + Input.GetAxisRaw("AimV"));
 
-        if (aimH != 0.0 || aimV != 0.0)
+        if (aim.x != 0.0 || aim.y != 0.0)
         {
             _player.ShowAimingArrow(true);
 
-            float zRot = Mathf.Atan2(aimV, aimH) * Mathf.Rad2Deg;
+            float zRot = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
             _player.ApplyAimRotation(new Vector3(0, 0, zRot));
-            _player.ThrowWand(new Vector3(aimH, aimV, 0));
-
         }
         else
         {
@@ -102,9 +107,26 @@ public class InputManager : MonoBehaviour {
         }
     }
 
+    private Vector2 GetAimInput()
+    {
+        float aimH = Input.GetAxis("Horizontal");
+        float aimV = Input.GetAxis("Vertical") * -1; //Reverse the Y axis for more intuitive movement (= normal)
+
+        return new Vector2(aimH, aimV);
+    }
+
+    void StartAiming()
+    {
+        // Update player's state
+        _player.SetAimingState(true);
+
+        // Time is slowed down while the player aims
+        Time.timeScale = _timeSlowRatio;
+    }
+
     void OnAimingEnd()
     {
-        Debug.Log("On aiming end !!");
+        //Debug.Log("On aiming end !!");
 
         // Set player's state
         _player.SetAimingState(false);

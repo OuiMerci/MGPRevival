@@ -52,6 +52,7 @@ public class PlayerBehaviour : MonoBehaviour {
         _wand = WandBehaviour.Instance;
 
         _aimArrowRenderer.transform.position = GetPlayerCenter();
+        ShowAimingArrow(false);
     }
 	
 	// Update is called once per frame
@@ -105,7 +106,13 @@ public class PlayerBehaviour : MonoBehaviour {
 
     public void ThrowWand(Vector3 direction)
     {
-        _wand.Spawn(direction.normalized * _wandOffset, direction);
+        _wand.StartSpawnCoroutine(direction.normalized * _wandOffset, direction);
+    }
+
+    public void TeleportToWand()
+    {
+        transform.position = _wand.transform.position;
+        _wand.Reset();
     }
 
     public Vector3 GetPlayerCenter()
