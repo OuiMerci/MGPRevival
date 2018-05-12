@@ -14,6 +14,7 @@ public class InputManager : MonoBehaviour {
     private PlayerBehaviour _player = null;
     private WandBehaviour _wand = null;
     private int _backgroundLayerMask = 0;
+    private bool _teleportAsked = false;
     #endregion Fields
 
     #region Properties
@@ -47,7 +48,7 @@ public class InputManager : MonoBehaviour {
             }
             else if(_wand.CanTeleport)
             {
-                _player.TeleportToWand();
+                _teleportAsked = true;
             }
         }
         else if (Input.GetButtonUp("Aim"))
@@ -61,7 +62,6 @@ public class InputManager : MonoBehaviour {
             }
         }
 
-
         if (_player.IsAiming)
         {
             if(Input.GetButtonDown("AimCancel"))
@@ -74,9 +74,20 @@ public class InputManager : MonoBehaviour {
                 ApplyAimingInput();
             }
         }
-        else
+    }
+
+    // Operations implying movements / physics
+    private void FixedUpdate()
+    {
+        if (_player.IsAiming == false)
         {
             ApplyMovementInput();
+        }
+
+        if (_teleportAsked == true)
+        {
+            _teleportAsked = false;
+            _player.TeleportToWand();
         }
     }
 
