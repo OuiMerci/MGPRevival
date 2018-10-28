@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WandBehaviour : MonoBehaviour {
+public class ArtefactBehaviour : MonoBehaviour {
 
     #region Fields
-    static private WandBehaviour _instance = null;
+    static private ArtefactBehaviour _instance = null;
 
     [SerializeField] private float _force = 0;
     [SerializeField] private float _gravityScale = 0;
@@ -21,7 +21,7 @@ public class WandBehaviour : MonoBehaviour {
     #endregion
 
     #region Properties
-    static public WandBehaviour Instance
+    static public ArtefactBehaviour Instance
     {
         get { return _instance; }
     }
@@ -61,7 +61,7 @@ public class WandBehaviour : MonoBehaviour {
 
     private IEnumerator Spawn(Vector3 pos, Vector3 direction)
     {
-        // The wand is out
+        // The artefact is out
 
 
         // BLINDAGE _> Reset RBody velocity
@@ -71,7 +71,7 @@ public class WandBehaviour : MonoBehaviour {
         // Initiate position
         transform.position = pos + _player.GetPlayerCenter();
 
-        // Show the wand
+        // Show the artefact
         SetVisible(true);
 
         _rBody2D.AddForce(direction * _force, ForceMode2D.Impulse);
@@ -106,7 +106,7 @@ public class WandBehaviour : MonoBehaviour {
         _rBody2D.velocity = Vector2.zero;
         _rBody2D.angularVelocity = 0;
 
-        // Hide the wand
+        // Hide the artefact
         SetVisible(false);
 
         // Is with Player

@@ -12,7 +12,7 @@ public class InputManager : MonoBehaviour {
     private const int MAX_RAYCAST_DISTANCE = 25;
     private GameManager _gameManager = null;
     private PlayerBehaviour _player = null;
-    private WandBehaviour _wand = null;
+    private ArtefactBehaviour _artefact = null;
     private int _backgroundLayerMask = 0;
     private bool _teleportAsked = false;
     #endregion Fields
@@ -33,7 +33,7 @@ public class InputManager : MonoBehaviour {
     // Use this for initialization
     void Start () {
         _player = PlayerBehaviour.Instance;
-        _wand = WandBehaviour.Instance;
+        _artefact = ArtefactBehaviour.Instance;
     }
 	
 	// Update is called once per frame
@@ -42,11 +42,11 @@ public class InputManager : MonoBehaviour {
         //Check aiming state
         if(Input.GetButtonDown("Aim"))
         {
-            if(_wand.IsWithPlayer)
+            if(_artefact.IsWithPlayer)
             {
                 StartAiming();
             }
-            else if(_wand.CanTeleport)
+            else if(_artefact.CanTeleport)
             {
                 _teleportAsked = true;
             }
@@ -58,7 +58,7 @@ public class InputManager : MonoBehaviour {
                 OnAimingEnd();
 
                 Vector3 aim = GetAimInput();
-                _player.ThrowWand(aim);
+                _player.ThrowArtefact(aim);
             }
         }
 
@@ -67,7 +67,7 @@ public class InputManager : MonoBehaviour {
             if(Input.GetButtonDown("AimCancel"))
             {
                 OnAimingEnd();
-                _wand.SetVisible(false);
+                _artefact.SetVisible(false);
             }
             else
             {
@@ -87,7 +87,7 @@ public class InputManager : MonoBehaviour {
         if (_teleportAsked == true)
         {
             _teleportAsked = false;
-            _player.TeleportToWand();
+            _player.TeleportToArtefact();
         }
     }
 

@@ -8,11 +8,11 @@ public class PlayerBehaviour : MonoBehaviour {
     [SerializeField] private SpriteRenderer _aimArrowRenderer = null;
     [SerializeField] private float _speed = 0.0f;
     [SerializeField] private float _dashingSpeed = 0.0f;
-    [SerializeField] private float _wandOffset = 0.0f;
+    [SerializeField] private float _artefactOffset = 0.0f;
 
     static private PlayerBehaviour _instance = null;
     private SpriteRenderer _spriteRenderer = null;
-    private WandBehaviour _wand = null;
+    private ArtefactBehaviour _artefact = null;
     private Animator _anim = null;
     private int _runHash = Animator.StringToHash("isRunning");
     private int _dashHash = Animator.StringToHash("isDashing");
@@ -49,7 +49,7 @@ public class PlayerBehaviour : MonoBehaviour {
     void Start () {
         _anim = GetComponent<Animator>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
-        _wand = WandBehaviour.Instance;
+        _artefact = ArtefactBehaviour.Instance;
 
         _aimArrowRenderer.transform.position = GetPlayerCenter();
         ShowAimingArrow(false);
@@ -104,15 +104,15 @@ public class PlayerBehaviour : MonoBehaviour {
         _anim.SetBool(_aimingHash, isAiming);
     }
 
-    public void ThrowWand(Vector3 direction)
+    public void ThrowArtefact(Vector3 direction)
     {
-        _wand.StartSpawnCoroutine(direction.normalized * _wandOffset, direction);
+        _artefact.StartSpawnCoroutine(direction.normalized * _artefactOffset, direction);
     }
 
-    public void TeleportToWand()
+    public void TeleportToArtefact()
     {
-        transform.position = _wand.transform.position;
-        _wand.Reset();
+        transform.position = _artefact.transform.position;
+        _artefact.Reset();
     }
 
     public Vector3 GetPlayerCenter()
