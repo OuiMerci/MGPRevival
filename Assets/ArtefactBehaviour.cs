@@ -49,7 +49,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         _rBody2D = GetComponent<Rigidbody2D>();
         _coll2D = GetComponent<Collider2D>();
 
-        SetVisible(false);
+        SetArtifactActive(false);
         _rBody2D.gravityScale = 0;
         _isWithPlayer = true;
 
@@ -71,9 +71,6 @@ public class ArtefactBehaviour : MonoBehaviour {
         // Initiate position
         transform.position = pos + _player.GetPlayerCenter();
 
-        // Show the artefact
-        SetVisible(true);
-
         _rBody2D.AddForce(direction * _force, ForceMode2D.Impulse);
         _rBody2D.AddTorque(_firstRotForce, ForceMode2D.Impulse);
         _rBody2D.gravityScale = _gravityScale;
@@ -83,21 +80,24 @@ public class ArtefactBehaviour : MonoBehaviour {
         _canTeleport = true;
     }
 
-    public void SetVisible(bool show)
+    public void SetArtifactActive(bool boolParam)
     {
-        _spriteRenderer.enabled = show;
-        _coll2D.enabled = show;
+        gameObject.SetActive(boolParam);
+        //_spriteRenderer.enabled = boolParam;
+        //_coll2D.enabled = boolParam;
     }
 
     public void StartSpawnCoroutine(Vector3 pos, Vector3 direction)
     {
+        // Show the artefact
+        SetArtifactActive(true);
         StartCoroutine(Spawn(pos, direction));
     }
 
     public void GoBackToPlayer()
     {
         _isWithPlayer = true;
-        SetVisible(false);
+        SetArtifactActive(false);
     }
 
     public void Reset()
@@ -107,7 +107,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         _rBody2D.angularVelocity = 0;
 
         // Hide the artefact
-        SetVisible(false);
+        SetArtifactActive(false);
 
         // Is with Player
         _isWithPlayer = true;

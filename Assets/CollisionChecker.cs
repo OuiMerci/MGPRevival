@@ -49,20 +49,6 @@ public class CollisionChecker : MonoBehaviour {
 
         _bottomColl.offset = new Vector2(0, -_mainColl.size.y * 1/4);
         _bottomColl.size = new Vector2(_mainColl.size.x, _mainColl.size.y/2);
-
-        /*
-        _leftColl.offset = new Vector2(_mainColl.size.x * 3/8, 0);
-        _leftColl.size = new Vector2(_mainColl.size.x/4, _mainColl.size.y * 6/8);
-
-        _rightColl.offset = new Vector2(-_mainColl.size.x * 3 / 8, 0);
-        _rightColl.size = new Vector2(_mainColl.size.x / 4, _mainColl.size.y * 6 / 8);
-
-        _topColl.offset = new Vector2(0, _mainColl.size.y * 7 / 16);
-        _topColl.size = new Vector2(_mainColl.size.x / 2, _mainColl.size.y * 1 / 8);
-
-        _bottomColl.offset = new Vector2(0, -_mainColl.size.y * 7 / 16);
-        _bottomColl.size = new Vector2(_mainColl.size.x / 2, _mainColl.size.y * 1 / 8);
-        */
     }
 
     void CheckCollisions()

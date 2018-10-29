@@ -67,7 +67,7 @@ public class InputManager : MonoBehaviour {
             if(Input.GetButtonDown("AimCancel"))
             {
                 OnAimingEnd();
-                _artefact.SetVisible(false);
+                _artefact.SetArtifactActive(false);
             }
             else
             {

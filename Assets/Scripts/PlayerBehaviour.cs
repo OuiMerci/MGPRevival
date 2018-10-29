@@ -14,6 +14,7 @@ public class PlayerBehaviour : MonoBehaviour {
     private SpriteRenderer _spriteRenderer = null;
     private ArtefactBehaviour _artefact = null;
     private Animator _anim = null;
+    private Collider2D _collider2D = null;
     private int _runHash = Animator.StringToHash("isRunning");
     private int _dashHash = Animator.StringToHash("isDashing");
     private int _aimingHash = Animator.StringToHash("isAiming");
@@ -37,6 +38,16 @@ public class PlayerBehaviour : MonoBehaviour {
     {
         get { return _isAiming; }
     }
+
+    public float Height
+    {
+        get { return _collider2D.bounds.extents.y * 2; }
+    }
+
+    public float Width
+    {
+        get { return _collider2D.bounds.extents.x * 2; }
+    }
     #endregion
 
     #region Methods
@@ -50,9 +61,11 @@ public class PlayerBehaviour : MonoBehaviour {
         _anim = GetComponent<Animator>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _artefact = ArtefactBehaviour.Instance;
+        _collider2D = GetComponent<Collider2D>();
 
         _aimArrowRenderer.transform.position = GetPlayerCenter();
         ShowAimingArrow(false);
+        Debug.Log("Player height : " + Height + " width : " + Width);
     }
 	
 	// Update is called once per frame
