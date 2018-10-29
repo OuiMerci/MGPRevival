@@ -39,14 +39,19 @@ public class PlayerBehaviour : MonoBehaviour {
         get { return _isAiming; }
     }
 
-    public float Height
+    public float VerticalExtent
     {
-        get { return _collider2D.bounds.extents.y * 2; }
+        get { return _collider2D.bounds.extents.y; }
     }
 
-    public float Width
+    public float HorizontalExtent
     {
-        get { return _collider2D.bounds.extents.x * 2; }
+        get { return _collider2D.bounds.extents.x; }
+    }
+
+    public Collider2D Coll2D
+    {
+        get { return _collider2D; }
     }
     #endregion
 
@@ -65,7 +70,6 @@ public class PlayerBehaviour : MonoBehaviour {
 
         _aimArrowRenderer.transform.position = GetPlayerCenter();
         ShowAimingArrow(false);
-        Debug.Log("Player height : " + Height + " width : " + Width);
     }
 	
 	// Update is called once per frame
@@ -124,7 +128,8 @@ public class PlayerBehaviour : MonoBehaviour {
 
     public void TeleportToArtefact()
     {
-        transform.position = _artefact.transform.position;
+        // Get tweaked position from the artefact and teleport to it
+        transform.position = _artefact.GetTPPosition(); ;
         _artefact.Reset();
     }
 

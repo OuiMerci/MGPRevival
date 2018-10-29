@@ -14,9 +14,9 @@ TagManager:
   - UI
   - 
   - 
-  - HorizontalWall
-  - VerticalWall
-  - 
+  - LevelStructure
+  - Player
+  - Artefact
   - 
   - 
   - 
