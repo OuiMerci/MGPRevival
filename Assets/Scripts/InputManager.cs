@@ -5,8 +5,9 @@ using UnityEngine;
 public class InputManager : MonoBehaviour {
 
     #region Fields
-    static private InputManager _instance = null;
+    [SerializeField] private float _minHInput = 0;
 
+    static private InputManager _instance = null;
     private const int MAX_RAYCAST_DISTANCE = 25;
     private GameManager _gameManager = null;
     private PlayerBehaviour _player = null;
@@ -37,8 +38,15 @@ public class InputManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+        if(_player.CanAim())
+        {
+            TestAimingInput();
+        }
 
-        TestAimingInput();
+        if(_player.CanRecall())
+        {
+            TestRecallInput();
+        }
     }
 
     // Operations implying movements / physics
@@ -61,14 +69,16 @@ public class InputManager : MonoBehaviour {
         float HorizontalInput = Input.GetAxis("Horizontal");
         bool isDashing = Input.GetAxis("Dash") < - 0.8f;
 
+        // Overwrite deadzone for movement
+        if (Mathf.Abs(HorizontalInput) < _minHInput)
+            HorizontalInput = 0;
+
         _player.Move(new Vector3(HorizontalInput, 0, 0), isDashing);
     }
 
     void ApplyAimingInput()
     {
         Vector2 aim = GetAimInput();
-
-        //Debug.Log(" axis = " + aimH + "    " + aimV + "  get  : " + Input.GetAxisRaw("AimH") + "     " + Input.GetAxisRaw("AimV"));
 
         if (aim.x != 0.0 || aim.y != 0.0)
         {
@@ -124,7 +134,9 @@ public class InputManager : MonoBehaviour {
     private Vector2 GetAimInput()
     {
         float aimH = Input.GetAxis("Horizontal");
-        float aimV = Input.GetAxis("Vertical") * -1; //Reverse the Y axis for more intuitive movement (= normal)
+        float aimV = Input.GetAxis("Vertical"); //Reverse the Y axis for more intuitive movement (= normal)
+
+        //Debug.Log("  get H : " + aimH + "    V " + aimV);
 
         return new Vector2(aimH, aimV);
     }
@@ -133,7 +145,7 @@ public class InputManager : MonoBehaviour {
     {
         if(Input.GetButton("Recall"))
         {
-            _player.TryRecall();
+            _player.Recall();
         }
     }
     #endregion

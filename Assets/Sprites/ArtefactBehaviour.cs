@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class ArtefactBehaviour : MonoBehaviour {
 
@@ -11,6 +12,7 @@ public class ArtefactBehaviour : MonoBehaviour {
     [SerializeField] private float _gravityScale = 0;
     [SerializeField] private float _firstRotForce = 0;
     [SerializeField] private float _delayBeforeTP = 0;
+    [SerializeField] private GameObject _tweeningSprite = null;
 
     private SpriteRenderer _spriteRenderer = null;
     private PlayerBehaviour _player = null;
@@ -18,6 +20,7 @@ public class ArtefactBehaviour : MonoBehaviour {
     private Collider2D _coll2D = null;
     private bool _isWithPlayer = true;
     private bool _canTeleport = false;
+    private bool _isTweening = false;
 
     private const int LEVELSTRUCTURE_LAYERMASK = 1 << 8;
     #endregion
@@ -31,6 +34,11 @@ public class ArtefactBehaviour : MonoBehaviour {
     public bool IsWithPlayer
     {
         get { return _isWithPlayer; }
+    }
+
+    public bool IsTweening
+    {
+        get { return _isTweening; }
     }
 
     public bool CanTeleport
@@ -57,14 +65,10 @@ public class ArtefactBehaviour : MonoBehaviour {
         _isWithPlayer = true;
 
     }
-	
-	// Update is called once per frame
-	void Update () {
-	}
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log( collision.otherCollider.name + " colliding with : " + collision.collider.name);
+        //Debug.Log( collision.otherCollider.name + " colliding with : " + collision.collider.name);
     }
 
     private IEnumerator Spawn(Vector3 pos, Vector3 direction)
@@ -88,6 +92,24 @@ public class ArtefactBehaviour : MonoBehaviour {
         _canTeleport = true;
     }
 
+    public void ShowTweenRenderer(bool show)
+    {
+        _spriteRenderer.enabled = !show;
+        _tweeningSprite.SetActive(show);
+    }
+
+    private void OnRecallComplete()
+    {
+        // Update boolean
+        _isTweening = false;
+
+        // Reset Parameters
+        ResetArtifact();
+
+        // Show artifact sprite
+        ShowTweenRenderer(false);
+    }
+
     public void SetArtifactActive(bool boolParam)
     {
         gameObject.SetActive(boolParam);
@@ -102,17 +124,14 @@ public class ArtefactBehaviour : MonoBehaviour {
         StartCoroutine(Spawn(pos, direction));
     }
 
-    public void GoBackToPlayer()
-    {
-        _isWithPlayer = true;
-        SetArtifactActive(false);
-    }
-
-    public void Reset()
+    public void ResetArtifact()
     {
         // Reset RBody velocity
         _rBody2D.velocity = Vector2.zero;
         _rBody2D.angularVelocity = 0;
+
+        // Reset kinematic settings
+        _rBody2D.isKinematic = false;
 
         // Hide the artefact
         SetArtifactActive(false);
@@ -201,10 +220,43 @@ public class ArtefactBehaviour : MonoBehaviour {
         
     }
 
+    public void Recall()
+    {
+        // Update boolean
+        _isTweening = true;
+
+        // clear movement from rigidbody
+        Freeze();
+
+        // Get destination
+        Vector2 dest = _player.GetPlayerCenter();
+
+        // compute distance from player
+        float distance = Vector3.Distance(transform.position, dest);
+
+        // Get the duration of tweening
+        float duration = _player.ComputeTweenDuration(distance);
+        transform.DOMove(dest, duration, true).SetEase(Ease.InBack).OnComplete(OnRecallComplete);
+
+        ShowTweenRenderer(true);
+    }
+
     public void Freeze()
     {
         _rBody2D.velocity = Vector3.zero;
         _rBody2D.isKinematic = true;
+    }
+
+    public bool CanRecall()
+    {
+        if(_isTweening || _isWithPlayer || _canTeleport == false)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
     #endregion
 }

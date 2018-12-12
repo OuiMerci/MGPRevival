@@ -11,7 +11,9 @@ public class PlayerBehaviour : MonoBehaviour {
     [SerializeField] private float _speed = 0.0f;
     [SerializeField] private float _dashingSpeed = 0.0f;
     [SerializeField] private float _artefactOffset = 0.0f;
-    [SerializeField] private float _TPTweeningDuration = 0.0f;
+    [SerializeField] private float _baseTPTweeningDuration = 0.0f;
+    [SerializeField] private float _distanceTweeningDurationRatio = 0.0f;
+    [SerializeField] private GameObject _tweeningSprite = null;
 
     static private PlayerBehaviour _instance = null;
     private SpriteRenderer _spriteRenderer = null;
@@ -24,6 +26,7 @@ public class PlayerBehaviour : MonoBehaviour {
     private int _aimingHash = Animator.StringToHash("isAiming");
 
     private bool _isAiming = false;
+    private bool _isTweening = false;
 
     #endregion
 
@@ -41,6 +44,11 @@ public class PlayerBehaviour : MonoBehaviour {
     public bool IsAiming
     {
         get { return _isAiming; }
+    }
+
+    public bool IsTweening
+    {
+        get { return _isTweening; }
     }
 
     public float VerticalExtent
@@ -159,29 +167,81 @@ public class PlayerBehaviour : MonoBehaviour {
 
     public void TeleportToArtefact()
     {
+        // Update boolean
+        _isTweening = true;
+
         // Get tweaked position from the artefact and teleport to it
-        //transform.position = _artefact.GetTPPosition();
-        transform.DOMove(_artefact.GetTPPosition(), _TPTweeningDuration, true).SetEase(Ease.InBack).OnComplete(OnTeleportComplete);
-        _artefact.Reset();
+        Vector2 dest = _artefact.GetTPPosition();
+
+        // Compute the tweening duration
+        float duration = _baseTPTweeningDuration + Vector3.Distance(transform.position, _artefact.transform.position) * _distanceTweeningDurationRatio;
+
+        transform.DOMove(dest, duration, true).SetEase(Ease.InBack).OnComplete(OnTeleportComplete);
+        ShowTweenRenderer(true);
+        _artefact.Freeze();
+
+        Debug.Log("Dist = " + Vector3.Distance(transform.position, _artefact.transform.position) + "   total time : " + duration);
+    }
+
+    public void ShowTweenRenderer(bool show)
+    {
+        _spriteRenderer.enabled = !show;
+        _tweeningSprite.SetActive(show);
     }
 
     private void OnTeleportComplete()
     {
         Debug.Log("TP COMPLETE");
+        // Update boolean
+        _isTweening = false;
+
+        // Hide Tween Sprite
+        ShowTweenRenderer(false);
+
+        // Reset Artifact parameters
+        _artefact.ResetArtifact();
     }
 
-    public void TryRecall()
+    public void Recall()
     {
-        // Implies that if the player can TP he can always also recall
-        if (_artefact.CanTeleport)
-        {
-            // start tween logic
-        }
+        _artefact.Recall();
+    }
+
+    public float ComputeTweenDuration(float distance)
+    {
+        float duration = _baseTPTweeningDuration + distance * _distanceTweeningDurationRatio;
+        Debug.Log("Dist = " + distance + "   total time : " + duration);
+
+        return duration;
     }
 
     public Vector3 GetPlayerCenter()
     {
         return _spriteRenderer.sprite.bounds.center + transform.position;
+    }
+
+    public bool CanAim()
+    {
+        if(_isTweening || _artefact.IsTweening) // Add every boolean preventing the player from aiming
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    public bool CanRecall()
+    {
+        if (_isTweening || _artefact.CanRecall() == false) // Add every boolean preventing the player from aiming
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
     #endregion
 }
