@@ -1521,7 +1521,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69005a46e3f3e8a4b810f3a3a4280a7a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _timeSlowRatio: 0.1
 --- !u!1 &1733607194
 GameObject:
   m_ObjectHideFlags: 0
@@ -1619,10 +1618,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 379c5a655708a6048bc80144b9d0deb0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _timeSlowRatio: 1
   _aimArrowRenderer: {fileID: 207504232}
   _speed: 25
   _dashingSpeed: 55
   _artefactOffset: 0
+  _TPTweeningDuration: 0.5
 --- !u!212 &1994618299
 SpriteRenderer:
   m_ObjectHideFlags: 0

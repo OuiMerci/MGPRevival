@@ -7,14 +7,13 @@ public class InputManager : MonoBehaviour {
     #region Fields
     static private InputManager _instance = null;
 
-    [SerializeField] private float _timeSlowRatio = 1;
-
     private const int MAX_RAYCAST_DISTANCE = 25;
     private GameManager _gameManager = null;
     private PlayerBehaviour _player = null;
     private ArtefactBehaviour _artefact = null;
     private int _backgroundLayerMask = 0;
     private bool _teleportAsked = false;
+    private bool _recallAsked = false;
     #endregion Fields
 
     #region Properties
@@ -39,41 +38,7 @@ public class InputManager : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-        //Check aiming state
-        if(Input.GetButtonDown("Aim"))
-        {
-            if(_artefact.IsWithPlayer)
-            {
-                StartAiming();
-            }
-            else if(_artefact.CanTeleport)
-            {
-                _teleportAsked = true;
-            }
-        }
-        else if (Input.GetButtonUp("Aim"))
-        {
-            if(_player.IsAiming)
-            {
-                OnAimingEnd();
-
-                Vector3 aim = GetAimInput();
-                _player.ThrowArtefact(aim);
-            }
-        }
-
-        if (_player.IsAiming)
-        {
-            if(Input.GetButtonDown("AimCancel"))
-            {
-                OnAimingEnd();
-                _artefact.SetArtifactActive(false);
-            }
-            else
-            {
-                ApplyAimingInput();
-            }
-        }
+        TestAimingInput();
     }
 
     // Operations implying movements / physics
@@ -118,6 +83,44 @@ public class InputManager : MonoBehaviour {
         }
     }
 
+    private void TestAimingInput()
+    {
+        //Check aiming state
+        if (Input.GetButtonDown("Aim"))
+        {
+            if (_artefact.IsWithPlayer)
+            {
+                _player.StartAiming();
+            }
+            else if (_artefact.CanTeleport)
+            {
+                _teleportAsked = true;
+            }
+        }
+        else if (Input.GetButtonUp("Aim"))
+        {
+            if (_player.IsAiming)
+            {
+                _player.OnAimingEnd();
+
+                Vector3 aim = GetAimInput();
+                _player.ThrowArtefact(aim);
+            }
+        }
+
+        if (_player.IsAiming)
+        {
+            if (Input.GetButtonDown("AimCancel"))
+            {
+                _player.OnAimingEnd();
+            }
+            else
+            {
+                ApplyAimingInput();
+            }
+        }
+    }
+
     private Vector2 GetAimInput()
     {
         float aimH = Input.GetAxis("Horizontal");
@@ -126,25 +129,12 @@ public class InputManager : MonoBehaviour {
         return new Vector2(aimH, aimV);
     }
 
-    void StartAiming()
+    private void TestRecallInput()
     {
-        // Update player's state
-        _player.SetAimingState(true);
-
-        // Time is slowed down while the player aims
-        Time.timeScale = _timeSlowRatio;
-    }
-
-    void OnAimingEnd()
-    {
-        //Debug.Log("On aiming end !!");
-
-        // Set player's state
-        _player.SetAimingState(false);
-        _player.ShowAimingArrow(false);
-
-        // Set back to normal time scale
-        Time.timeScale = 1;
+        if(Input.GetButton("Recall"))
+        {
+            _player.TryRecall();
+        }
     }
     #endregion
 }

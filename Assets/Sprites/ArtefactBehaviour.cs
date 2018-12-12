@@ -200,5 +200,11 @@ public class ArtefactBehaviour : MonoBehaviour {
         return tweakedPosition;
         
     }
+
+    public void Freeze()
+    {
+        _rBody2D.velocity = Vector3.zero;
+        _rBody2D.isKinematic = true;
+    }
     #endregion
 }

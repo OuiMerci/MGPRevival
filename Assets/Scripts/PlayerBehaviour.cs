@@ -1,20 +1,24 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class PlayerBehaviour : MonoBehaviour {
 
     #region fields
+    [SerializeField] private float _timeSlowRatio = 1;
     [SerializeField] private SpriteRenderer _aimArrowRenderer = null;
     [SerializeField] private float _speed = 0.0f;
     [SerializeField] private float _dashingSpeed = 0.0f;
     [SerializeField] private float _artefactOffset = 0.0f;
+    [SerializeField] private float _TPTweeningDuration = 0.0f;
 
     static private PlayerBehaviour _instance = null;
     private SpriteRenderer _spriteRenderer = null;
     private ArtefactBehaviour _artefact = null;
     private Animator _anim = null;
     private Collider2D _collider2D = null;
+    private GameManager _gameManager = null;
     private int _runHash = Animator.StringToHash("isRunning");
     private int _dashHash = Animator.StringToHash("isDashing");
     private int _aimingHash = Animator.StringToHash("isAiming");
@@ -63,6 +67,7 @@ public class PlayerBehaviour : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+        _gameManager = GameManager.Instance;
         _anim = GetComponent<Animator>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _artefact = ArtefactBehaviour.Instance;
@@ -70,6 +75,8 @@ public class PlayerBehaviour : MonoBehaviour {
 
         _aimArrowRenderer.transform.position = GetPlayerCenter();
         ShowAimingArrow(false);
+        
+        // Init de DoTween ?
     }
 	
 	// Update is called once per frame
@@ -103,6 +110,30 @@ public class PlayerBehaviour : MonoBehaviour {
         }
     }
 
+    public void StartAiming()
+    {
+        // Update player's state
+        SetAimingState(true);
+
+        // Time is slowed down while the player aims
+        _gameManager.UpdateTimeScale(_timeSlowRatio);
+    }
+
+    public void OnAimingEnd()
+    {
+        //Debug.Log("On aiming end !!");
+
+        // Set player's state
+        SetAimingState(false);
+        ShowAimingArrow(false);
+
+        // Set Art's state
+        _artefact.SetArtifactActive(false);
+
+        // Set back to normal time scale
+        _gameManager.UpdateTimeScale(GameManager.BASE_TIMESCALE);
+    }
+
     public void ApplyAimRotation(Vector3 angle)
     {
         //Debug.Log("Apply angle : " + angle);
@@ -129,8 +160,23 @@ public class PlayerBehaviour : MonoBehaviour {
     public void TeleportToArtefact()
     {
         // Get tweaked position from the artefact and teleport to it
-        transform.position = _artefact.GetTPPosition(); ;
+        //transform.position = _artefact.GetTPPosition();
+        transform.DOMove(_artefact.GetTPPosition(), _TPTweeningDuration, true).SetEase(Ease.InBack).OnComplete(OnTeleportComplete);
         _artefact.Reset();
+    }
+
+    private void OnTeleportComplete()
+    {
+        Debug.Log("TP COMPLETE");
+    }
+
+    public void TryRecall()
+    {
+        // Implies that if the player can TP he can always also recall
+        if (_artefact.CanTeleport)
+        {
+            // start tween logic
+        }
     }
 
     public Vector3 GetPlayerCenter()

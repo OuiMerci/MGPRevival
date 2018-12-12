@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 public class GameManager : MonoBehaviour {
 
     #region Fields
+    public const float BASE_TIMESCALE = 1;
     [SerializeField] private int _nextLevel = 0;
     [SerializeField] private int _previousLevel = 0;
 
@@ -74,6 +75,11 @@ public class GameManager : MonoBehaviour {
         Debug.Log("On level finished");
         _nextLevel++;
         LoadNextLevel();
+    }
+
+    public void UpdateTimeScale(float timeScale)
+    {
+        Time.timeScale = timeScale;
     }
     #endregion Methods
 }
