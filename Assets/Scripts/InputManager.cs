@@ -15,6 +15,8 @@ public class InputManager : MonoBehaviour {
     private int _backgroundLayerMask = 0;
     private bool _teleportAsked = false;
     private bool _recallAsked = false;
+
+    public bool usingSwitchPad;
     #endregion Fields
 
     #region Properties
@@ -34,6 +36,12 @@ public class InputManager : MonoBehaviour {
     void Start () {
         _player = PlayerBehaviour.Instance;
         _artefact = ArtefactBehaviour.Instance;
+
+        Debug.Log("Connected Gamepads");
+        for(int i=0; i < Input.GetJoystickNames().Length; i++)
+        {
+            Debug.Log(Input.GetJoystickNames()[i]);
+        }
     }
 	
 	// Update is called once per frame
@@ -68,6 +76,11 @@ public class InputManager : MonoBehaviour {
     {
         float HorizontalInput = Input.GetAxis("Horizontal");
         bool isDashing = Input.GetAxis("Dash") < - 0.8f;
+
+        if(usingSwitchPad)
+        {
+            HorizontalInput = Input.GetAxis("SwitchH");
+        }
 
         // Overwrite deadzone for movement
         if (Mathf.Abs(HorizontalInput) < _minHInput)
@@ -135,6 +148,12 @@ public class InputManager : MonoBehaviour {
     {
         float aimH = Input.GetAxis("Horizontal");
         float aimV = Input.GetAxis("Vertical"); //Reverse the Y axis for more intuitive movement (= normal)
+
+        if(usingSwitchPad)
+        {
+            aimH = Input.GetAxis("SwitchH");
+            aimV = Input.GetAxis("SwitchV");
+        }
 
         //Debug.Log("  get H : " + aimH + "    V " + aimV);
 
