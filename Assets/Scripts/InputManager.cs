@@ -5,16 +5,21 @@ using UnityEngine;
 public class InputManager : MonoBehaviour {
 
     #region Fields
-    [SerializeField] private float _minHInput = 0;
+    [SerializeField] private float _minHInput;
+    [SerializeField] private float _aimClampOffset; // when clamping, an offset is used -> ex : max = (90° - offset)
+
+    public enum ClampedAimEnum
+    {
+        none, top, left, right, topLeft, topRight
+    }
+    static private ClampedAimEnum _clampedAim = ClampedAimEnum.none;
 
     static private InputManager _instance = null;
     private const int MAX_RAYCAST_DISTANCE = 25;
-    private GameManager _gameManager = null;
     private PlayerBehaviour _player = null;
     private ArtefactBehaviour _artefact = null;
-    private int _backgroundLayerMask = 0;
     private bool _teleportAsked = false;
-    private bool _recallAsked = false;
+    private float _lastValidZRot = 0;
 
     public bool usingSwitchPad;
     #endregion Fields
@@ -46,36 +51,30 @@ public class InputManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        if(_player.CanAim())
-        {
-            TestAimingInput();
-        }
 
-        if(_player.CanRecall())
-        {
-            TestRecallInput();
-        }
+        TestAimingInput();
+        TestRecallInput();
+        TestMagnetInput();
     }
 
     // Operations implying movements / physics
     private void FixedUpdate()
     {
-        if (_player.IsAiming == false)
-        {
-            ApplyMovementInput();
-        }
-
         if (_teleportAsked == true)
         {
             _teleportAsked = false;
             _player.TeleportToArtefact();
+        }
+
+        if (_player.CanMove())
+        {
+            ApplyMovementInput();
         }
     }
 
     void ApplyMovementInput()
     {
         float HorizontalInput = Input.GetAxis("Horizontal");
-        bool isDashing = Input.GetAxis("Dash") < - 0.8f;
 
         if(usingSwitchPad)
         {
@@ -86,7 +85,17 @@ public class InputManager : MonoBehaviour {
         if (Mathf.Abs(HorizontalInput) < _minHInput)
             HorizontalInput = 0;
 
-        _player.Move(new Vector3(HorizontalInput, 0, 0), isDashing);
+        _player.Move(new Vector3(HorizontalInput, 0, 0), IsDashing());
+    }
+
+    private bool IsDashing()
+    {
+        bool isDashing = Input.GetAxis("Dash") < -0.8f;
+
+        if (isDashing == false)
+            isDashing = Input.GetButton("Dash");
+
+        return isDashing;
     }
 
     void ApplyAimingInput()
@@ -98,6 +107,8 @@ public class InputManager : MonoBehaviour {
             _player.ShowAimingArrow(true);
 
             float zRot = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
+            AimClamper(ref zRot);
+
             _player.ApplyAimRotation(new Vector3(0, 0, zRot));
         }
         else
@@ -111,11 +122,12 @@ public class InputManager : MonoBehaviour {
         //Check aiming state
         if (Input.GetButtonDown("Aim"))
         {
-            if (_artefact.IsWithPlayer)
+            if (_player.CanAim())
             {
+                _lastValidZRot = 0; // initialize last valid input
                 _player.StartAiming();
             }
-            else if (_artefact.CanTeleport)
+            else if (_artefact.ReadyForInteraction())
             {
                 _teleportAsked = true;
             }
@@ -143,7 +155,7 @@ public class InputManager : MonoBehaviour {
             }
         }
     }
-
+    // TODO : Add some code to clamp the aiming (when hanging, can't aim toward the wall)
     private Vector2 GetAimInput()
     {
         float aimH = Input.GetAxis("Horizontal");
@@ -162,9 +174,103 @@ public class InputManager : MonoBehaviour {
 
     private void TestRecallInput()
     {
-        if(Input.GetButton("Recall"))
+        if(Input.GetButton("Recall") && _player.CanRecall())
         {
             _player.Recall();
+        }
+    }
+
+    private void TestMagnetInput()
+    {
+        if(Input.GetButtonDown("Magnet"))
+        {
+            _artefact.StartBeMagnet();
+        }
+        else if (Input.GetButtonUp("Magnet"))
+        {
+            _artefact.StopBeMagnet();
+        }
+    }
+
+    static public void SetClampedAim(ClampedAimEnum clampedAim)
+    {
+        _clampedAim = clampedAim;
+    }
+
+    private void AimClamper(ref float zRot)
+    {
+        switch (_clampedAim)
+        {
+            case ClampedAimEnum.left:
+                if (zRot > (90 - _aimClampOffset) || zRot < (-90 + _aimClampOffset))
+                {
+                    zRot = _lastValidZRot;
+                }
+                else
+                {
+                    _lastValidZRot = zRot;
+                }
+                break;
+            case ClampedAimEnum.right:
+                if (_lastValidZRot == 0)
+                {
+                    _lastValidZRot = 180; // initialise zRot
+                }
+
+                if (zRot < (90 + _aimClampOffset)  && zRot > (-90 - _aimClampOffset))
+                {
+                    zRot = _lastValidZRot;
+                }
+                else
+                {
+                    _lastValidZRot = zRot;
+                }
+                break;
+            case ClampedAimEnum.top:
+                if (_lastValidZRot == 0)
+                {
+                    _lastValidZRot = -90; // initialise zRot
+                }
+
+                if (zRot > (0 - _aimClampOffset) || zRot < (-180 +_aimClampOffset))
+                {
+                    zRot = _lastValidZRot;
+                }
+                else
+                {
+                    _lastValidZRot = zRot;
+                }
+                break;
+            case ClampedAimEnum.topLeft:
+                if (_lastValidZRot == 0)
+                {
+                    _lastValidZRot = -45; // initialise zRot
+                }
+
+                if (zRot < (-90 + _aimClampOffset) || zRot > (0 - _aimClampOffset))
+                {
+                    zRot = _lastValidZRot;
+                }
+                else
+                {
+                    _lastValidZRot = zRot;
+                }
+                break;
+            case ClampedAimEnum.topRight:
+                if (_lastValidZRot == 0)
+                {
+                    _lastValidZRot = -135; // initialise zRot
+                }
+
+                if (zRot < (-180 - _aimClampOffset) || zRot > (-90 -_aimClampOffset))
+                {
+                    zRot = _lastValidZRot;
+                }
+                else
+                {
+                    _lastValidZRot = zRot;
+                }
+                break;
         }
     }
     #endregion
