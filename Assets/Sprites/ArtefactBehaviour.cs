@@ -28,6 +28,8 @@ public class ArtefactBehaviour : MonoBehaviour {
     private PlayerBehaviour _player = null;
     private Rigidbody2D _rBody2D = null;
     private Collider2D _coll2D = null;
+    private Joint2D _joint = null;
+    private Rigidbody2D _attachedRB;
 
     // Is it worth it to add a state machine ?
     private bool _canTeleport = false;
@@ -73,6 +75,11 @@ public class ArtefactBehaviour : MonoBehaviour {
         get { return _state == ArtefactState.Magnetised; }
     }
 
+    public bool IsTweening
+    {
+        get { return _state == ArtefactState.Tweening; }
+    }
+
     public bool IsSnapping
     {
         get { return _snapping; }
@@ -91,6 +98,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         _player = PlayerBehaviour.Instance;
         _rBody2D = GetComponent<Rigidbody2D>();
         _coll2D = GetComponent<Collider2D>();
+        _joint = GetComponent<Joint2D>();
 
         //Physics2D.IgnoreCollision(_coll2D, _player.Coll2D, true);
         SetArtifactActive(false);
@@ -100,20 +108,9 @@ public class ArtefactBehaviour : MonoBehaviour {
     // A RETRAVAILLET POUR LE REGLER CONFLIT MAGNET / SNAP / RECALL
     private void Update()
     {
-        if(_isMagnet && IsMagnetised == false)
-        {
-            if(_snapping == false)
-            {
-                Vector3 dest = GetTPPosition(HorizontalExtent, VerticalExtent, _magnetSnapDistance, _magnetSnapDistance, magnetLayer, true);
-                if(dest != transform.position)
-                {
-                    _snapping = true;
-                    _rBody2D.velocity = Vector3.zero;
-                    SetKinematic(true);
-                    _snapTween = transform.DOMove(dest, _magnetSnapDuration, true).SetEase(Ease.Linear).OnComplete(StartMagnetised);
-                }
-            }
-        }
+        //// AJOUTER UN CHECK DE DISTANCE ENTRE ART ET MC -> METTRE FIN AU HANGING MAIS LAISSER LE BATON MAGNETISED
+
+        CheckSnap();
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -145,6 +142,24 @@ public class ArtefactBehaviour : MonoBehaviour {
         _canTeleport = true;
     }
 
+    private void CheckSnap()
+    {
+        if (_isMagnet && IsMagnetised == false)
+        {
+            if (_snapping == false)
+            {
+                Vector3 dest = GetSnapPosition(HorizontalExtent, VerticalExtent, _magnetSnapDistance, _magnetSnapDistance, out _attachedRB, magnetLayer);
+                if (dest != transform.position)
+                {
+                    _snapping = true;
+                    _rBody2D.velocity = Vector3.zero;
+                    SetKinematic(true);
+                    _snapTween = transform.DOMove(dest, _magnetSnapDuration, true).SetEase(Ease.Linear).OnComplete(StartMagnetised);
+                }
+            }
+        }
+    }
+
     private void SetKinematic(bool newStatus, bool resetVelocity = true)
     {
         if(resetVelocity)
@@ -174,9 +189,10 @@ public class ArtefactBehaviour : MonoBehaviour {
     private void StartMagnetised()
     {
         _snapping = false;
-        SetKinematic(true);
+        SetKinematic(false);
+        _joint.connectedBody = _attachedRB;
+        _joint.enabled = true;
         SetArtefactState(ArtefactState.Magnetised);
-        //transform.position = GetTPPosition(HorizontalExtent, VerticalExtent, HorizontalExtent, VerticalExtent);
     }
 
     private void EndMagnetised(ArtefactState newState)
@@ -185,6 +201,8 @@ public class ArtefactBehaviour : MonoBehaviour {
         if(_player.IsTweening == false)
             SetKinematic(false);
 
+        _joint.connectedBody = null;
+        _joint.enabled = false;
         SetArtefactState(newState);
     }
 
@@ -235,9 +253,88 @@ public class ArtefactBehaviour : MonoBehaviour {
     /// <param name="hMaxDistance">Max distance for horizontal raycasts</param>
     /// <param name="vMaxDistance">Max distance for vertical raycasts</param>
     /// <returns>Returns the valid position that is the closest to the wall</returns>
-    public Vector2 GetTPPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, int mask = WALLS_AND_MAGNETS_LAYERMASK, bool trySnap = false)
+    public Vector2 GetTPPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, int mask = WALLS_AND_MAGNETS_LAYERMASK)
     {
         RaycastHit2D hit;
+        bool useTweakedX = false;
+        bool useTweakedY = false;
+        float tweakedX = 0;
+        float tweakedY = 0;
+
+        //If the sprite pivot is not in the center, but at the bottom, we need some tweaking.
+        float spritePivotFix = vExtent;
+
+        //raycast down
+        hit = Physics2D.Raycast(transform.position, Vector2.down, vMaxDistance, mask);
+        Debug.DrawLine(transform.position, transform.position + (Vector3.down * vMaxDistance), Color.green);
+        if (hit.collider != null)
+        {
+            useTweakedY = true;
+            tweakedY = hit.point.y + vExtent - spritePivotFix;
+            //Debug.Log("Colliding bot with : " + hit.collider.name + ", Tweaking Y to : " + tweakedY);
+        }
+        else
+        {
+            //raycast up
+            hit = Physics2D.Raycast(transform.position, Vector2.up, vMaxDistance, mask);
+            Debug.DrawLine(transform.position, transform.position + (Vector3.up * vMaxDistance), Color.blue);
+            if (hit.collider != null)
+            {
+                useTweakedY = true;
+                tweakedY = hit.point.y - vExtent - spritePivotFix;
+                //Debug.Log("Colliding up with : " + hit.collider.name + ", Tweaking Y to : " + tweakedY);
+            }
+        }
+
+        //raycast left
+        hit = Physics2D.Raycast(transform.position, Vector2.left, hMaxDistance, mask);
+        Debug.DrawLine(transform.position, transform.position + (Vector3.left * hMaxDistance), Color.red);
+        if (hit.collider != null)
+        {
+            useTweakedX = true;
+            tweakedX = hit.point.x + hExtent;
+            //Debug.Log("Colliding left with : " + hit.collider.name + ", Tweaking X to : " + tweakedX);
+        }
+        else
+        {
+            //raycast right
+            hit = Physics2D.Raycast(transform.position, Vector2.right, hMaxDistance, mask);
+            Debug.DrawLine(transform.position, transform.position + (Vector3.right * hMaxDistance), Color.yellow);
+            if (hit.collider != null)
+            {
+                useTweakedX = true;
+                tweakedX = hit.point.x - hExtent;
+                //Debug.Log("Colliding right with : " + hit.collider.name + ", Tweaking X to : " + tweakedX);
+            }
+        }
+
+        //Set and return tweaked position
+        Vector2 tweakedPosition = transform.position;
+
+        if (useTweakedX && useTweakedY)
+        {
+            tweakedPosition = new Vector2(tweakedX, tweakedY);
+            //Debug.Log("Used Tweaked X AND Y");
+        }
+        else if (useTweakedX)
+        {
+            tweakedPosition = new Vector2(tweakedX, transform.position.y);
+            //Debug.Log("Used Tweaked X")
+
+        }
+        else if(useTweakedY)
+        {
+            tweakedPosition = new Vector2(transform.position.x, tweakedY);
+            //Debug.Log("Used Tweaked Y");
+        }
+
+        return tweakedPosition;
+    }
+
+    public Vector2 GetSnapPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, out Rigidbody2D otherRB, int mask = WALLS_AND_MAGNETS_LAYERMASK)
+    {
+        RaycastHit2D hit;
+        otherRB = null;
         bool useTweakedX = false;
         bool useTweakedY = false;
         float tweakedX = 0;
@@ -256,14 +353,13 @@ public class ArtefactBehaviour : MonoBehaviour {
             tweakedY = hit.point.y + vExtent - spritePivotFix;
             //Debug.Log("Colliding bot with : " + hit.collider.name + ", Tweaking Y to : " + tweakedY);
 
-            if (trySnap)
-            {
-                if (hit.collider == _magPreviousV) // if we hit the same wall as the previous one, ignore it
-                    useTweakedY = false;
-                else
-                    _magPreviousV = hit.collider; // if the wall isn't the same, update _magPreviousV
+            if (hit.collider == _magPreviousV) // if we hit the same wall as the previous one, ignore it
+                useTweakedY = false;
+            else
+                _magPreviousV = hit.collider; // if the wall isn't the same, update _magPreviousV
 
-            }
+            // Try assign otherRB
+            otherRB = hit.transform.GetComponent<Rigidbody2D>();
         }
         else
         {
@@ -276,19 +372,20 @@ public class ArtefactBehaviour : MonoBehaviour {
                 tweakedY = hit.point.y - vExtent - spritePivotFix;
                 //Debug.Log("Colliding up with : " + hit.collider.name + ", Tweaking Y to : " + tweakedY);
 
-                if (trySnap)
-                {
-                    if (hit.collider == _magPreviousV) // if we hit the same wall as the previous one, ignore it
-                        useTweakedY = false;
-                    else
-                        _magPreviousV = hit.collider; // if the wall isn't the same, update _magPreviousV
+                if (hit.collider == _magPreviousV) // if we hit the same wall as the previous one, ignore it
+                    useTweakedY = false;
+                else
+                    _magPreviousV = hit.collider; // if the wall isn't the same, update _magPreviousV
 
-                    // update player's aim clamp
-                    InputManager.SetClampedAim(InputManager.ClampedAimEnum.top);
-                    topClamped = true;
-                }
+                // update player's aim clamp
+                InputManager.SetClampedAim(InputManager.ClampedAimEnum.top);
+                topClamped = true;
+
+                // Try assign otherRB
+                if(otherRB == null)
+                    otherRB = hit.transform.GetComponent<Rigidbody2D>();
             }
-            else if(trySnap)
+            else
             {
                 // Nothing hit ? Reset _magPreviousV
                 _magPreviousV = null;
@@ -304,19 +401,20 @@ public class ArtefactBehaviour : MonoBehaviour {
             tweakedX = hit.point.x + hExtent;
             //Debug.Log("Colliding left with : " + hit.collider.name + ", Tweaking X to : " + tweakedX);
 
-            if (trySnap)
-            {
-                if (hit.collider == _magPreviousH) // if we hit the same wall as the previous one, ignore it
-                    useTweakedX = false;
-                else
-                    _magPreviousH = hit.collider; // if the wall isn't the same, update _magPreviousH
+            if (hit.collider == _magPreviousH) // if we hit the same wall as the previous one, ignore it
+                useTweakedX = false;
+            else
+                _magPreviousH = hit.collider; // if the wall isn't the same, update _magPreviousH
 
-                // Update player's aim clamp
-                if (topClamped)
-                    InputManager.SetClampedAim(InputManager.ClampedAimEnum.topLeft);
-                else
-                    InputManager.SetClampedAim(InputManager.ClampedAimEnum.left);
-            }
+            // Update player's aim clamp
+            if (topClamped)
+                InputManager.SetClampedAim(InputManager.ClampedAimEnum.topLeft);
+            else
+                InputManager.SetClampedAim(InputManager.ClampedAimEnum.left);
+
+            // Try assign otherRB
+            if (otherRB == null)
+                otherRB = hit.transform.GetComponent<Rigidbody2D>();
         }
         else
         {
@@ -329,21 +427,22 @@ public class ArtefactBehaviour : MonoBehaviour {
                 tweakedX = hit.point.x - hExtent;
                 //Debug.Log("Colliding right with : " + hit.collider.name + ", Tweaking X to : " + tweakedX);
 
-                if (trySnap)
-                {
-                    if (hit.collider == _magPreviousH) // if we hit the same wall as the previous one, ignore it
-                        useTweakedX = false;
-                    else
-                        _magPreviousH = hit.collider; // if the wall isn't the same, update _magPreviousH
-                }
+                if (hit.collider == _magPreviousH) // if we hit the same wall as the previous one, ignore it
+                    useTweakedX = false;
+                else
+                    _magPreviousH = hit.collider; // if the wall isn't the same, update _magPreviousH
 
                 // Update player's aim clamp
                 if (topClamped)
                     InputManager.SetClampedAim(InputManager.ClampedAimEnum.topRight);
                 else
                     InputManager.SetClampedAim(InputManager.ClampedAimEnum.right);
+
+                // Try assign otherRB
+                if (otherRB == null)
+                    otherRB = hit.transform.GetComponent<Rigidbody2D>();
             }
-            else if(trySnap)
+            else
             {
                 // Nothing hit ? Reset _magPreviousV
                 _magPreviousH = null;
@@ -380,7 +479,7 @@ public class ArtefactBehaviour : MonoBehaviour {
             EndMagnetised(ArtefactState.Tweening);
 
         // clear movement from rigidbody
-        Freeze();
+        TryFreeze();
 
         // Get destination
         Vector2 dest = _player.GetPlayerCenter();
@@ -399,8 +498,14 @@ public class ArtefactBehaviour : MonoBehaviour {
         SetArtefactState(ArtefactState.Tweening);
     }
 
-    public void Freeze()
+    public void TryFreeze()
     {
+        if(IsMagnetised)
+        {
+            Debug.Log("Artefact is already magnetised / frozen");
+            return;
+        }
+
         _rBody2D.velocity = Vector3.zero;
         _rBody2D.isKinematic = true;
     }
@@ -457,7 +562,7 @@ public class ArtefactBehaviour : MonoBehaviour {
 
     public bool ReadyForInteraction()
     {
-        if (_canTeleport == false)
+        if (_canTeleport == false || IsTweening == true)
             return false;
         else
             return true;

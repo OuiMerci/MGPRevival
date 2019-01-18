@@ -39,9 +39,8 @@ public class PlayerBehaviour : MonoBehaviour {
     private int _runHash = Animator.StringToHash("isRunning");
     private int _dashHash = Animator.StringToHash("isDashing");
     private int _aimingHash = Animator.StringToHash("isAiming");
-
     private bool _isAiming = false;
-
+    private Joint2D _joint2D = null;
     #endregion
 
     #region Properties
@@ -121,6 +120,7 @@ public class PlayerBehaviour : MonoBehaviour {
         _artefact = ArtefactBehaviour.Instance;
         _collider2D = GetComponent<Collider2D>();
         _rBody2D = GetComponent<Rigidbody2D>();
+        _joint2D = GetComponent<Joint2D>();
 
         _aimArrowRenderer.transform.position = GetPlayerCenter();
         ShowAimingArrow(false);
@@ -169,14 +169,18 @@ public class PlayerBehaviour : MonoBehaviour {
     private void StartHanging()
     {
         SetPlayerState(PlayerState.Hanging);
-        _rBody2D.isKinematic = true;
-        _rBody2D.velocity = Vector3.zero;
+        //_rBody2D.isKinematic = true;
+        //_rBody2D.velocity = Vector3.zero;
+
+        _rBody2D.isKinematic = false;
+        _joint2D.enabled = true;
     }
 
     private void EndHanging(PlayerState newState)
     {
         SetPlayerState(newState);
         _rBody2D.isKinematic = false;
+        _joint2D.enabled = false;
     }
 
     private void SetPlayerState(PlayerState newState)
@@ -264,8 +268,8 @@ public class PlayerBehaviour : MonoBehaviour {
 
         transform.DOMove(dest, duration, true).SetEase(Ease.InBack).OnComplete(OnTeleportComplete);
         ShowTweenRenderer(true);
-        _artefact.Freeze();
 
+        _artefact.TryFreeze();
         //Debug.Log("Dist = " + Vector3.Distance(transform.position, _artefact.transform.position) + "   total time : " + duration);
     }
 
