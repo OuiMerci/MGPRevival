@@ -26,7 +26,7 @@ public class ArtefactBehaviour : MonoBehaviour {
 
     private SpriteRenderer _spriteRenderer = null;
     private PlayerBehaviour _player = null;
-    private Rigidbody2D _rBody2D = null;
+    public Rigidbody2D _rBody2D = null;
     private Collider2D _coll2D = null;
     private Joint2D _joint = null;
     private Rigidbody2D _attachedRB;
@@ -35,13 +35,11 @@ public class ArtefactBehaviour : MonoBehaviour {
     private bool _canTeleport = false;
     private bool _isMagnet = false;
     private bool _snapping = false;
+    private bool _glued = false;
     private Tweener _snapTween;
     public Collider2D _magPreviousH; // stores the previous H wall it was magnetised to, snap will be ignored for it until it leaves range
     public Collider2D _magPreviousV; // stores the previous V wall it was magnetised to, snap will be ignored for it until it leaves range
 
-    private const int wallsLayer = 1 << 8;
-    private const int magnetLayer = 1 << 11;
-    private const int WALLS_AND_MAGNETS_LAYERMASK = wallsLayer | magnetLayer;
     #endregion
 
     #region Properties
@@ -85,6 +83,10 @@ public class ArtefactBehaviour : MonoBehaviour {
         get { return _snapping; }
     }
 
+    public bool IsGlued
+    {
+        get { return _glued; }
+    }
     #endregion
 
     #region Methods
@@ -115,18 +117,19 @@ public class ArtefactBehaviour : MonoBehaviour {
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        //Debug.Log( collision.otherCollider.name + " colliding with : " + collision.collider.name);
-        if(_isMagnet && collision.gameObject.tag == "MagnetWall")
+        //Debug.Log( collision.otherCollider.name + " colliding with : " + collision.collider.name + "  with tag : " + collision.collider.tag + "  Object tag = " + collision.gameObject.tag);
+        if(collision.collider.tag == "ArtGlue")
         {
-            //StartMagnetised();
+            StartGlue(collision.rigidbody);
         }
     }
 
     private IEnumerator Spawn(Vector3 pos, Vector3 direction)
     {
-        // The artefact is out
+        // BLINDAGE -> No more joint
+        _joint.enabled = false;
 
-        // BLINDAGE _> Reset RBody velocity
+        // BLINDAGE -> Reset RBody velocity
         _rBody2D.isKinematic = false;
         _rBody2D.velocity = Vector2.zero;
         _rBody2D.angularVelocity = 0;
@@ -148,7 +151,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         {
             if (_snapping == false)
             {
-                Vector3 dest = GetSnapPosition(HorizontalExtent, VerticalExtent, _magnetSnapDistance, _magnetSnapDistance, out _attachedRB, magnetLayer);
+                Vector3 dest = GetSnapPosition(HorizontalExtent, VerticalExtent, _magnetSnapDistance, _magnetSnapDistance, out _attachedRB,GameManager.magnetLayer);
                 if (dest != transform.position)
                 {
                     _snapping = true;
@@ -186,12 +189,18 @@ public class ArtefactBehaviour : MonoBehaviour {
         ShowTweenRenderer(false);
     }
 
+    private void StartGlue(Rigidbody2D rb)
+    {
+        Debug.Log("Start glue !");
+        _glued = true;
+        ConnectRigidBody(rb);
+    }
+
     private void StartMagnetised()
     {
         _snapping = false;
         SetKinematic(false);
-        _joint.connectedBody = _attachedRB;
-        _joint.enabled = true;
+        ConnectRigidBody(_attachedRB);
         SetArtefactState(ArtefactState.Magnetised);
     }
 
@@ -201,9 +210,20 @@ public class ArtefactBehaviour : MonoBehaviour {
         if(_player.IsTweening == false)
             SetKinematic(false);
 
+        DisconnectRigidBody();
+        SetArtefactState(newState);
+    }
+
+    private void ConnectRigidBody(Rigidbody2D rb)
+    {
+        _joint.connectedBody = rb;
+        _joint.enabled = true;
+    }
+
+    private void DisconnectRigidBody()
+    {
         _joint.connectedBody = null;
         _joint.enabled = false;
-        SetArtefactState(newState);
     }
 
     private void SetArtefactState(ArtefactState newState)
@@ -241,6 +261,9 @@ public class ArtefactBehaviour : MonoBehaviour {
         SetArtefactState(ArtefactState.WithPlayer);
         _canTeleport = false;
 
+        // The artefact isn't glued anymore
+        _glued = false;
+
         // Reset Player's aim clamp
         InputManager.SetClampedAim(InputManager.ClampedAimEnum.none);
     }
@@ -253,7 +276,7 @@ public class ArtefactBehaviour : MonoBehaviour {
     /// <param name="hMaxDistance">Max distance for horizontal raycasts</param>
     /// <param name="vMaxDistance">Max distance for vertical raycasts</param>
     /// <returns>Returns the valid position that is the closest to the wall</returns>
-    public Vector2 GetTPPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, int mask = WALLS_AND_MAGNETS_LAYERMASK)
+    public Vector2 GetTPPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, int mask = GameManager.WALLS_AND_MAGNETS_LAYERMASK)
     {
         RaycastHit2D hit;
         bool useTweakedX = false;
@@ -331,7 +354,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         return tweakedPosition;
     }
 
-    public Vector2 GetSnapPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, out Rigidbody2D otherRB, int mask = WALLS_AND_MAGNETS_LAYERMASK)
+    public Vector2 GetSnapPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, out Rigidbody2D otherRB, int mask = GameManager.WALLS_AND_MAGNETS_LAYERMASK)
     {
         RaycastHit2D hit;
         otherRB = null;
@@ -500,7 +523,7 @@ public class ArtefactBehaviour : MonoBehaviour {
 
     public void TryFreeze()
     {
-        if(IsMagnetised)
+        if(IsMagnetised || IsGlued)
         {
             Debug.Log("Artefact is already magnetised / frozen");
             return;

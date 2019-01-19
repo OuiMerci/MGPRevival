@@ -42,11 +42,11 @@ public class InputManager : MonoBehaviour {
         _player = PlayerBehaviour.Instance;
         _artefact = ArtefactBehaviour.Instance;
 
-        Debug.Log("Connected Gamepads");
-        for(int i=0; i < Input.GetJoystickNames().Length; i++)
-        {
-            Debug.Log(Input.GetJoystickNames()[i]);
-        }
+        //Debug.Log("Connected Gamepads");
+        //for(int i=0; i < Input.GetJoystickNames().Length; i++)
+        //{
+        //    Debug.Log(Input.GetJoystickNames()[i]);
+        //}
     }
 	
 	// Update is called once per frame
@@ -55,6 +55,7 @@ public class InputManager : MonoBehaviour {
         TestAimingInput();
         TestRecallInput();
         TestMagnetInput();
+        TestDashInput();
     }
 
     // Operations implying movements / physics
@@ -85,17 +86,17 @@ public class InputManager : MonoBehaviour {
         if (Mathf.Abs(HorizontalInput) < _minHInput)
             HorizontalInput = 0;
 
-        _player.Move(new Vector3(HorizontalInput, 0, 0), IsDashing());
+        _player.Move(new Vector3(HorizontalInput, 0, 0), IsRunning());
     }
 
-    private bool IsDashing()
+    private bool IsRunning()
     {
-        bool isDashing = Input.GetAxis("Dash") < -0.8f;
+        bool isRunning = Input.GetAxis("Run") < -0.8f;
 
-        if (isDashing == false)
-            isDashing = Input.GetButton("Dash");
+        if (isRunning == false)
+            isRunning = Input.GetButton("Run");
 
-        return isDashing;
+        return isRunning;
     }
 
     void ApplyAimingInput()
@@ -189,6 +190,14 @@ public class InputManager : MonoBehaviour {
         else if (Input.GetButtonUp("Magnet"))
         {
             _artefact.StopBeMagnet();
+        }
+    }
+
+    private void TestDashInput()
+    {
+        if (Input.GetButtonDown("Dash") && _player.CanDash())
+        {
+            _player.Dash();
         }
     }
 

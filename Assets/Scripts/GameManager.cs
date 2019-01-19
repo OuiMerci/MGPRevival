@@ -11,6 +11,9 @@ public class GameManager : MonoBehaviour {
     [SerializeField] private int _previousLevel = 0;
 
     private static GameManager _instance = null;
+    public const int wallsLayer = 1 << 8;
+    public const int magnetLayer = 1 << 11;
+    public const int WALLS_AND_MAGNETS_LAYERMASK = wallsLayer | magnetLayer;
     #endregion Fields
 
     #region properties

@@ -9,17 +9,23 @@ public class PlayerBehaviour : MonoBehaviour {
     [SerializeField] private float _timeSlowRatio = 1;
     [SerializeField] private SpriteRenderer _aimArrowRenderer = null;
     [SerializeField] private float _speed = 0.0f;
-    [SerializeField] private float _dashingSpeed = 0.0f;
+    [SerializeField] private float _runningSpeed = 0.0f;
+    [SerializeField] private float _dashDistance = 0.0f;
+    [SerializeField] private float _dashDuration = 0.0f;
     [SerializeField] private float _artefactOffset = 0.0f;
     [SerializeField] private float _baseTPTweeningDuration = 0.0f;
     [SerializeField] private float _distanceTweeningDurationRatio = 0.0f;
     [SerializeField] private GameObject _tweeningSprite = null;
 
+    // Cooldown
+    [SerializeField] private CooldownHandler _dashCD = null;
+
     public enum PlayerState // set back to private once _state is hidden
     {
         Free,
         Hanging,
-        Tweening
+        Tweening,
+        Dashing
     }
     public PlayerState _state;
 
@@ -36,8 +42,8 @@ public class PlayerBehaviour : MonoBehaviour {
     private Collider2D _collider2D = null;
     private GameManager _gameManager = null;
     private Rigidbody2D _rBody2D = null;
+    private int _walkHash = Animator.StringToHash("isWalking");
     private int _runHash = Animator.StringToHash("isRunning");
-    private int _dashHash = Animator.StringToHash("isDashing");
     private int _aimingHash = Animator.StringToHash("isAiming");
     private bool _isAiming = false;
     private Joint2D _joint2D = null;
@@ -94,6 +100,11 @@ public class PlayerBehaviour : MonoBehaviour {
         get { return _clampedAim; }
         set { _clampedAim = value; }
     }
+
+    public int Orientation
+    {
+        get { return _spriteRenderer.flipX ? -1 : 1; }
+    }
     #endregion
 
     #region Methods
@@ -113,7 +124,7 @@ public class PlayerBehaviour : MonoBehaviour {
     }
 
     // Use this for initialization
-    void Start () {
+    void Start() {
         _gameManager = GameManager.Instance;
         _anim = GetComponent<Animator>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -124,13 +135,16 @@ public class PlayerBehaviour : MonoBehaviour {
 
         _aimArrowRenderer.transform.position = GetPlayerCenter();
         ShowAimingArrow(false);
-        
-        // Init de DoTween ?
+    }
+
+    private void Update()
+    {
+        //_rBody2D.velocity = transform.right * _dashDistance;
     }
 
     private void OnArtefactDemagnetised()
     {
-        if(_state == PlayerState.Hanging)
+        if (_state == PlayerState.Hanging)
         {
             EndHanging(PlayerState.Free);
         }
@@ -154,7 +168,7 @@ public class PlayerBehaviour : MonoBehaviour {
         ShowTweenRenderer(false);
 
         // If the artfact isn't magnetised, reset its parameters
-        if(_artefact.IsMagnetised || _artefact.IsSnapping)
+        if (_artefact.IsMagnetised || _artefact.IsSnapping)
         {
             StartHanging();
         }
@@ -162,6 +176,9 @@ public class PlayerBehaviour : MonoBehaviour {
         {
             SetPlayerState(PlayerState.Free); // update state
             _rBody2D.isKinematic = false; // set back kinematic
+
+            // Make sure we get the latest position from the art
+            transform.position = _artefact.GetTPPosition(HorizontalExtent, VerticalExtent, HorizontalExtent, VerticalExtent);
             _artefact.ResetArtifact();
         }
     }
@@ -173,13 +190,17 @@ public class PlayerBehaviour : MonoBehaviour {
         //_rBody2D.velocity = Vector3.zero;
 
         _rBody2D.isKinematic = false;
+        _rBody2D.freezeRotation = false;
         _joint2D.enabled = true;
+        _joint2D.connectedBody = _artefact._rBody2D;
     }
 
     private void EndHanging(PlayerState newState)
     {
         SetPlayerState(newState);
         _rBody2D.isKinematic = false;
+        _rBody2D.freezeRotation = true;
+        transform.eulerAngles = Vector3.zero;
         _joint2D.enabled = false;
     }
 
@@ -188,29 +209,95 @@ public class PlayerBehaviour : MonoBehaviour {
         _state = newState;
     }
 
+    public void Dash()
+    {
+        SetPlayerState(PlayerState.Dashing);
+        _dashCD.StartCooldown();
+
+        Vector2 dest;
+        float effectiveDuration = 0;
+        Vector3 playerCenter = GetPlayerCenter();
+
+        // Raycast in front of the player and check for obstacles
+        RaycastHit2D hitH = Physics2D.Raycast(playerCenter, Vector2.right * Orientation, _dashDistance, GameManager.WALLS_AND_MAGNETS_LAYERMASK);
+        if (hitH.collider != null)
+        {
+            if (hitH.collider.transform.eulerAngles.z !=0)
+            {
+                dest = hitH.point;
+                Debug.DrawLine(playerCenter, hitH.point, Color.green, 1);
+            }
+            else
+            {
+                dest = new Vector3(hitH.point.x - Orientation * HorizontalExtent, transform.position.y);
+                Debug.DrawLine(playerCenter, hitH.point, Color.cyan, 1);
+            }
+
+            // distance difference
+            float diffX = Mathf.Abs(transform.position.x - dest.x);
+            float ratio = diffX / _dashDistance;
+
+            effectiveDuration = _dashDuration * ratio;
+
+            Debug.DrawLine(playerCenter, dest, Color.red, 1);
+        }
+        else
+        {
+            // If no obstacle has been found, check for ground level difference
+            Vector3 origin = playerCenter + new Vector3(_dashDistance * Orientation, 0, 0);
+            RaycastHit2D hitV = Physics2D.Raycast(origin, Vector2.down, VerticalExtent, GameManager.WALLS_AND_MAGNETS_LAYERMASK);
+            if (hitV.collider != null)
+            {
+                dest = hitV.point;
+                Debug.DrawLine(origin, hitV.point, Color.green, 1);
+            }
+            else
+            {
+                Debug.DrawLine(playerCenter, origin, Color.green, 1);
+                Debug.DrawLine(origin, origin + (Vector3.down * VerticalExtent), Color.red, 1);
+                dest = new Vector3(transform.position.x + Orientation * _dashDistance, transform.position.y, transform.position.z);
+            }
+
+            effectiveDuration = _dashDuration;
+        }
+
+        //_rBody2D.constraints = RigidbodyConstraints2D.FreezePositionY | RigidbodyConstraints2D.FreezeRotation;
+        transform.DOMove(dest, effectiveDuration).SetUpdate(UpdateType.Fixed).OnComplete(OnDashComplete);
+    }
+
+    private void OnDashComplete()
+    {
+        SetPlayerState(PlayerState.Free);
+    }
+
+    private void StartCooldown(ref float startTimeVariable)
+    {
+        startTimeVariable = Time.time;
+    }
+
     /// <summary>
     /// Update player's position and handle animations.
     /// </summary>
     /// <param name="movement">Movement added to the player's position</param>
-    public void Move(Vector3 movement, bool isDashing = false)
+    public void Move(Vector3 movement, bool isRuning = false)
     {
         if (movement != Vector3.zero)
         {
-            float actualSpeed = isDashing ? _dashingSpeed : _speed;
+            float actualSpeed = isRuning ? _runningSpeed : _speed;
             Vector3 newPos = transform.position + movement * actualSpeed * Time.deltaTime;
             transform.position = newPos; // Ajouter une fonction "ClampPosition" si nécessaire.
 
             // Handle animations
-            _anim.SetBool(_runHash, true);
-            _anim.SetBool(_dashHash, isDashing);
+            _anim.SetBool(_walkHash, true);
+            _anim.SetBool(_runHash, isRuning);
 
             _spriteRenderer.flipX = movement.x < 0 ? true : false;
         }
         else
         {
             // Handle animations
+            _anim.SetBool(_walkHash, false);
             _anim.SetBool(_runHash, false);
-            _anim.SetBool(_dashHash, false);
         }
     }
 
@@ -258,7 +345,7 @@ public class PlayerBehaviour : MonoBehaviour {
         SetPlayerState(PlayerState.Tweening);
 
         // Reset Velocity (cancel gravity if teleported while in the air)
-        _rBody2D.velocity = Vector3.zero;
+        _artefact.TryFreeze();
 
         // Get tweaked position from the artefact and teleport to it
         Vector2 dest = _artefact.GetTPPosition(HorizontalExtent, VerticalExtent, HorizontalExtent, VerticalExtent);
@@ -268,8 +355,7 @@ public class PlayerBehaviour : MonoBehaviour {
 
         transform.DOMove(dest, duration, true).SetEase(Ease.InBack).OnComplete(OnTeleportComplete);
         ShowTweenRenderer(true);
-
-        _artefact.TryFreeze();
+        
         //Debug.Log("Dist = " + Vector3.Distance(transform.position, _artefact.transform.position) + "   total time : " + duration);
     }
 
@@ -302,6 +388,22 @@ public class PlayerBehaviour : MonoBehaviour {
                 return true;
 
             default:
+                return false;
+        }
+    }
+
+    public bool CanDash()
+    {
+        switch (_state)
+        {
+            case PlayerState.Free:
+                if (_dashCD.Available)
+                    return true;
+                else
+                    return false;
+
+            default:
+                Debug.Log("Cannot Dash");
                 return false;
         }
     }
