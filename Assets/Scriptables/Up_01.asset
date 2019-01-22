@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0694b3475ecb3d47a641afe17fd5d8c, type: 3}
+  m_Name: Up_01
+  m_EditorClassIdentifier: 
+  _name: Up01
+  _damage: 10
+  _ComboDelay: 2
+  _anim: 4
+  _linkedHits:
+  - {fileID: 11400000, guid: 02453da61c0253e48af87270801b7f3c, type: 2}
+  _linkedInputs: 03000000

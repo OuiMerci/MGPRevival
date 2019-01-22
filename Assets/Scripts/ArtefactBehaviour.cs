@@ -29,7 +29,8 @@ public class ArtefactBehaviour : MonoBehaviour {
     public Rigidbody2D _rBody2D = null;
     private Collider2D _coll2D = null;
     private Joint2D _joint = null;
-    private Rigidbody2D _attachedRB;
+    //private Rigidbody2D _attachedRB;
+    private MovingPlatform _attachedPlatform;
 
     // Is it worth it to add a state machine ?
     private bool _canTeleport = false;
@@ -120,7 +121,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         //Debug.Log( collision.otherCollider.name + " colliding with : " + collision.collider.name + "  with tag : " + collision.collider.tag + "  Object tag = " + collision.gameObject.tag);
         if(collision.collider.tag == "ArtGlue")
         {
-            StartGlue(collision.rigidbody);
+            StartGlue(collision.transform.GetComponent<MovingPlatform>());
         }
     }
 
@@ -147,17 +148,33 @@ public class ArtefactBehaviour : MonoBehaviour {
 
     private void CheckSnap()
     {
+        //if (_isMagnet && IsMagnetised == false)
+        //{
+        //    if (_snapping == false)
+        //    {
+        //        Vector3 dest = GetSnapPosition(HorizontalExtent, VerticalExtent, _magnetSnapDistance, _magnetSnapDistance, out _attachedRB,GameManager.magnetLayer);
+        //        if (dest != transform.position)
+        //        {
+        //            _snapping = true;
+        //            _rBody2D.velocity = Vector3.zero;
+        //            SetKinematic(true);
+        //            _snapTween = transform.DOMove(dest, _magnetSnapDuration, true).SetEase(Ease.Linear).OnComplete(StartMagnetised);
+        //        }
+        //    }
+        //}
+
         if (_isMagnet && IsMagnetised == false)
         {
             if (_snapping == false)
             {
-                Vector3 dest = GetSnapPosition(HorizontalExtent, VerticalExtent, _magnetSnapDistance, _magnetSnapDistance, out _attachedRB,GameManager.magnetLayer);
+                GameObject platform;
+                Vector3 dest = GetSnapPosition(HorizontalExtent, VerticalExtent, _magnetSnapDistance, _magnetSnapDistance, out platform, GameManager.magnetLayer);
                 if (dest != transform.position)
                 {
                     _snapping = true;
                     _rBody2D.velocity = Vector3.zero;
                     SetKinematic(true);
-                    _snapTween = transform.DOMove(dest, _magnetSnapDuration, true).SetEase(Ease.Linear).OnComplete(StartMagnetised);
+                    _snapTween = transform.DOMove(dest, _magnetSnapDuration, true).SetEase(Ease.Linear).OnComplete(() => StartMagnetised(platform.GetComponent<MovingPlatform>()));
                 }
             }
         }
@@ -189,18 +206,23 @@ public class ArtefactBehaviour : MonoBehaviour {
         ShowTweenRenderer(false);
     }
 
-    private void StartGlue(Rigidbody2D rb)
+    private void StartGlue(MovingPlatform mp)
     {
         Debug.Log("Start glue !");
         _glued = true;
-        ConnectRigidBody(rb);
+        ConnectPlatform(mp);
     }
 
-    private void StartMagnetised()
+    private void StartMagnetised(MovingPlatform mp)
     {
+        //_snapping = false;
+        //SetKinematic(false);
+        //ConnectRigidBody(_attachedRB);
+        //SetArtefactState(ArtefactState.Magnetised);
+
         _snapping = false;
-        SetKinematic(false);
-        ConnectRigidBody(_attachedRB);
+        SetKinematic(true);
+        ConnectPlatform(mp);
         SetArtefactState(ArtefactState.Magnetised);
     }
 
@@ -210,20 +232,42 @@ public class ArtefactBehaviour : MonoBehaviour {
         if(_player.IsTweening == false)
             SetKinematic(false);
 
-        DisconnectRigidBody();
+        DisconnectPlatform();
         SetArtefactState(newState);
     }
 
-    private void ConnectRigidBody(Rigidbody2D rb)
+    private void ConnectPlatform(MovingPlatform mp)
     {
-        _joint.connectedBody = rb;
-        _joint.enabled = true;
+        //_joint.connectedBody = rb;
+        //_joint.enabled = true;
+
+        _attachedPlatform = mp;
+
+        if (_attachedPlatform != null)
+        {
+            _attachedPlatform.UpdateArtefact = true;
+        }
+        else
+        {
+            Debug.LogWarning("Trying to connect platform, but there is none !!");
+        }
     }
 
-    private void DisconnectRigidBody()
+    private void DisconnectPlatform()
     {
-        _joint.connectedBody = null;
-        _joint.enabled = false;
+        //_joint.connectedBody = null;
+        //_joint.enabled = false;
+
+        if (_attachedPlatform)
+        {
+            _attachedPlatform.UpdateArtefact = false;
+        }
+        else
+        {
+            Debug.LogWarning("Trying to disconnect platform, but there is none !!");
+        }
+
+        _attachedPlatform = null;
     }
 
     private void SetArtefactState(ArtefactState newState)
@@ -354,7 +398,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         return tweakedPosition;
     }
 
-    public Vector2 GetSnapPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, out Rigidbody2D otherRB, int mask = GameManager.WALLS_AND_MAGNETS_LAYERMASK)
+    public Vector2 GetSnapPosition(float hExtent, float vExtent, float hMaxDistance, float vMaxDistance, out GameObject otherRB, int mask = GameManager.WALLS_AND_MAGNETS_LAYERMASK)
     {
         RaycastHit2D hit;
         otherRB = null;
@@ -382,7 +426,8 @@ public class ArtefactBehaviour : MonoBehaviour {
                 _magPreviousV = hit.collider; // if the wall isn't the same, update _magPreviousV
 
             // Try assign otherRB
-            otherRB = hit.transform.GetComponent<Rigidbody2D>();
+            //otherRB = hit.transform.GetComponent<Rigidbody2D>();
+            otherRB = hit.transform.gameObject;
         }
         else
         {
@@ -406,7 +451,8 @@ public class ArtefactBehaviour : MonoBehaviour {
 
                 // Try assign otherRB
                 if(otherRB == null)
-                    otherRB = hit.transform.GetComponent<Rigidbody2D>();
+                    otherRB = hit.transform.gameObject;
+                    //otherRB = hit.transform.GetComponent<Rigidbody2D>();
             }
             else
             {
@@ -437,7 +483,8 @@ public class ArtefactBehaviour : MonoBehaviour {
 
             // Try assign otherRB
             if (otherRB == null)
-                otherRB = hit.transform.GetComponent<Rigidbody2D>();
+                otherRB = hit.transform.gameObject;
+                //otherRB = hit.transform.GetComponent<Rigidbody2D>();
         }
         else
         {
@@ -463,7 +510,8 @@ public class ArtefactBehaviour : MonoBehaviour {
 
                 // Try assign otherRB
                 if (otherRB == null)
-                    otherRB = hit.transform.GetComponent<Rigidbody2D>();
+                    otherRB = hit.transform.gameObject;
+                    //otherRB = hit.transform.GetComponent<Rigidbody2D>();
             }
             else
             {

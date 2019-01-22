@@ -16,6 +16,8 @@ public class PlayerBehaviour : MonoBehaviour {
     [SerializeField] private float _baseTPTweeningDuration = 0.0f;
     [SerializeField] private float _distanceTweeningDurationRatio = 0.0f;
     [SerializeField] private GameObject _tweeningSprite = null;
+    [SerializeField] private ComboManager _combo;
+    [SerializeField] private float _jumpForce;
 
     // Cooldown
     [SerializeField] private CooldownHandler _dashCD = null;
@@ -47,6 +49,9 @@ public class PlayerBehaviour : MonoBehaviour {
     private int _aimingHash = Animator.StringToHash("isAiming");
     private bool _isAiming = false;
     private Joint2D _joint2D = null;
+    private float _baseGravity = 0;
+    private bool _grounded;
+    //private List<ForcedMovement> _forcedMovements;
     #endregion
 
     #region Properties
@@ -105,6 +110,17 @@ public class PlayerBehaviour : MonoBehaviour {
     {
         get { return _spriteRenderer.flipX ? -1 : 1; }
     }
+
+    public ComboManager Combo
+    {
+        get { return _combo; }
+    }
+
+    public bool Grounded
+    {
+        get { return _grounded; }
+        set { _grounded = value; }
+    }
     #endregion
 
     #region Methods
@@ -132,6 +148,8 @@ public class PlayerBehaviour : MonoBehaviour {
         _collider2D = GetComponent<Collider2D>();
         _rBody2D = GetComponent<Rigidbody2D>();
         _joint2D = GetComponent<Joint2D>();
+        _baseGravity = _rBody2D.gravityScale;
+        //_forcedMovements = new List<ForcedMovement>();
 
         _aimArrowRenderer.transform.position = GetPlayerCenter();
         ShowAimingArrow(false);
@@ -139,7 +157,21 @@ public class PlayerBehaviour : MonoBehaviour {
 
     private void Update()
     {
-        //_rBody2D.velocity = transform.right * _dashDistance;
+        if(Input.GetButtonDown("Attack"))
+        {
+            Jump();
+        }
+    }
+
+    private void FixedUpdate()
+    {
+    }
+
+    private void Jump()
+    {
+        _rBody2D.velocity = Vector2.zero;
+        //AddForcedMovement(_jumpForce, Vector2.up, _jumpDuration);
+        _rBody2D.AddForce(_jumpForce * Vector2.up, ForceMode2D.Impulse);
     }
 
     private void OnArtefactDemagnetised()
@@ -183,6 +215,40 @@ public class PlayerBehaviour : MonoBehaviour {
         }
     }
 
+    //private void AddForcedMovement(float force, Vector2 direction, float duration)
+    //{
+    //    ForcedMovement newMov = new ForcedMovement(force, direction, duration);
+    //    _forcedMovements.Add(newMov);
+    //    Debug.Log("Adding new FM : " + newMov + "   " + _forcedMovements.Count);
+    //}
+
+    //private Vector2 GetForcedMovementsSum()
+    //{
+    //    Vector2 totalMovement = Vector2.zero;
+    //    ForcedMovement currentMovement = null;
+
+    //    for(int i = 0; i < _forcedMovements.Count; i++)
+    //    {
+    //        currentMovement = _forcedMovements[i];
+
+    //        if (currentMovement.IsAlive() == false)
+    //        {
+    //            _forcedMovements.RemoveAt(i);
+    //        }
+    //        else
+    //        {
+    //            totalMovement = currentMovement.AddMovement(totalMovement);
+    //        }
+    //    }
+
+    //    return totalMovement;
+    //}
+
+    private void SetGravity(float newGrav)
+    {
+        _rBody2D.gravityScale = newGrav;
+    }
+
     private void StartHanging()
     {
         SetPlayerState(PlayerState.Hanging);
@@ -213,6 +279,7 @@ public class PlayerBehaviour : MonoBehaviour {
     {
         SetPlayerState(PlayerState.Dashing);
         _dashCD.StartCooldown();
+        SetGravity(0); // Blindage : set gravity to 0
 
         Vector2 dest;
         float effectiveDuration = 0;
@@ -268,6 +335,7 @@ public class PlayerBehaviour : MonoBehaviour {
     private void OnDashComplete()
     {
         SetPlayerState(PlayerState.Free);
+        SetGravity(_baseGravity);
     }
 
     private void StartCooldown(ref float startTimeVariable)
@@ -286,6 +354,9 @@ public class PlayerBehaviour : MonoBehaviour {
             float actualSpeed = isRuning ? _runningSpeed : _speed;
             Vector3 newPos = transform.position + movement * actualSpeed * Time.deltaTime;
             transform.position = newPos; // Ajouter une fonction "ClampPosition" si nécessaire.
+
+            //_rBody2D.velocity += (Vector2)movement * actualSpeed * Time.deltaTime;
+            //Debug.Log("Veloc = " + movement * actualSpeed * Time.deltaTime);
 
             // Handle animations
             _anim.SetBool(_walkHash, true);

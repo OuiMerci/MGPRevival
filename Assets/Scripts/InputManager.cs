@@ -5,7 +5,8 @@ using UnityEngine;
 public class InputManager : MonoBehaviour {
 
     #region Fields
-    [SerializeField] private float _minHInput;
+    [SerializeField] private float _minPressLongAttack;
+    [SerializeField] private float _minStickInput;
     [SerializeField] private float _aimClampOffset; // when clamping, an offset is used -> ex : max = (90° - offset)
 
     public enum ClampedAimEnum
@@ -20,6 +21,7 @@ public class InputManager : MonoBehaviour {
     private ArtefactBehaviour _artefact = null;
     private bool _teleportAsked = false;
     private float _lastValidZRot = 0;
+    private double _startAttackPressTime = 0;
 
     public bool usingSwitchPad;
     #endregion Fields
@@ -52,6 +54,7 @@ public class InputManager : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
+        TestComboInput();
         TestAimingInput();
         TestRecallInput();
         TestMagnetInput();
@@ -73,6 +76,38 @@ public class InputManager : MonoBehaviour {
         }
     }
 
+    void TestComboInput()
+    {
+        if(Input.GetButtonUp("Attack"))
+        {
+            float vAxis = Input.GetAxis("Vertical");
+            ComboManager.Inputs input;
+
+            if (_startAttackPressTime + _minPressLongAttack < Time.time)
+            {
+                input = ComboManager.Inputs.LongAttack;
+            }
+            else if (vAxis > _minStickInput)
+            {
+                input = ComboManager.Inputs.UpAttack;
+            }
+            else if(vAxis <  -_minStickInput)
+            {
+                input = ComboManager.Inputs.DownAttack;
+            }
+            else
+            {
+                input = ComboManager.Inputs.Neutral;
+            }
+
+            _player.Combo.HandleInput(input);
+        }
+        else if(Input.GetButtonDown("Attack"))
+        {
+            _startAttackPressTime = Time.time;
+        }
+    }
+
     void ApplyMovementInput()
     {
         float HorizontalInput = Input.GetAxis("Horizontal");
@@ -83,7 +118,7 @@ public class InputManager : MonoBehaviour {
         }
 
         // Overwrite deadzone for movement
-        if (Mathf.Abs(HorizontalInput) < _minHInput)
+        if (Mathf.Abs(HorizontalInput) < _minStickInput)
             HorizontalInput = 0;
 
         _player.Move(new Vector3(HorizontalInput, 0, 0), IsRunning());
