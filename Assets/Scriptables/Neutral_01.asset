@@ -15,7 +15,7 @@ MonoBehaviour:
   _name: Neutral01
   _damage: 10
   _ComboDelay: 2
-  _anim: 0
+  _anim: 1
   _linkedHits:
   - {fileID: 11400000, guid: 6da7acbec750e6c4194cb0b760e2f5a9, type: 2}
-  _linkedInputs: 00000000
+  _linkedInputs: 01000000

@@ -119,7 +119,7 @@ public class ArtefactBehaviour : MonoBehaviour {
     private void OnCollisionEnter2D(Collision2D collision)
     {
         //Debug.Log( collision.otherCollider.name + " colliding with : " + collision.collider.name + "  with tag : " + collision.collider.tag + "  Object tag = " + collision.gameObject.tag);
-        if(collision.collider.tag == "ArtGlue")
+        if(collision.gameObject.CompareTag("ArtGlue"))
         {
             StartGlue(collision.transform.GetComponent<MovingPlatform>());
         }
@@ -136,7 +136,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         _rBody2D.angularVelocity = 0;
 
         // Initiate position
-        transform.position = pos + _player.GetPlayerCenter();
+        transform.position = pos + _player.GetCharacterCenter();
 
         _rBody2D.AddForce(direction * _force, ForceMode2D.Impulse);
         _rBody2D.AddTorque(_firstRotForce, ForceMode2D.Impulse);
@@ -553,7 +553,7 @@ public class ArtefactBehaviour : MonoBehaviour {
         TryFreeze();
 
         // Get destination
-        Vector2 dest = _player.GetPlayerCenter();
+        Vector2 dest = _player.GetCharacterCenter();
         // Debug.Log("dest = " + dest);
 
         // compute distance from player

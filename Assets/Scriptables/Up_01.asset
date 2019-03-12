@@ -15,7 +15,7 @@ MonoBehaviour:
   _name: Up01
   _damage: 10
   _ComboDelay: 2
-  _anim: 4
+  _anim: 5
   _linkedHits:
   - {fileID: 11400000, guid: 02453da61c0253e48af87270801b7f3c, type: 2}
-  _linkedInputs: 03000000
+  _linkedInputs: 04000000

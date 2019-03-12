@@ -24,6 +24,7 @@ public class ComboManager : MonoBehaviour
 
     public enum AttackAnimations
     {
+        SongStarter,
         slash01,
         slash02,
         slash03,
@@ -33,12 +34,14 @@ public class ComboManager : MonoBehaviour
 
     public enum Inputs
     {
+        SongStart, // this is a special input and doesn't behave like other combo inputs
         Neutral,
         UpAttack,
         LongAttack,
         DownAttack,
     }
 
+    [SerializeField] private HitInfo _songStarterInfo;
     [SerializeField] private HitInfo[] _initiatingHits;
     [SerializeField] private Inputs[] _initiatingInputs;
 
@@ -112,9 +115,16 @@ public class ComboManager : MonoBehaviour
         }
     }
 
-    // TODO : Si les inputs UpAttack / DownAttack n'ont pas de lien, les gérer comme des Neutral
+    // Go through le list of linked inputs to see if the newInput keeps comboing
     private void CheckLinkedInputs(Inputs newInput, bool initiate)
     {
+        // Song start is considered linked to every attack
+        if(newInput == Inputs.SongStart)
+        {
+            StartNewHit(_songStarterInfo);
+            return;
+        }
+
         bool isNeutralLinked = false;
         int neutralIndex = 0;
 
@@ -153,7 +163,7 @@ public class ComboManager : MonoBehaviour
 
     public void HandleInput(Inputs newInput)
     {
-        //Debug.Log("Handle input : " + newInput);
+        Debug.Log("Handle input : " + newInput + "    " + _comboState);
 
         switch(_comboState)
         {
@@ -177,6 +187,7 @@ public class ComboManager : MonoBehaviour
 
     public void StartNewHit(HitInfo hit)
     {
+        Debug.Log("New hit");
         _currentHit = hit;
         _comboState = ComboState.tooEarly;
         _animator.Play(_animHashes[(int)hit.Animation]);

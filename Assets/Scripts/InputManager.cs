@@ -7,6 +7,7 @@ public class InputManager : MonoBehaviour {
     #region Fields
     [SerializeField] private float _minPressLongAttack;
     [SerializeField] private float _minStickInput;
+    [SerializeField] private float _minTriggerInput;
     [SerializeField] private float _aimClampOffset; // when clamping, an offset is used -> ex : max = (90° - offset)
 
     public enum ClampedAimEnum
@@ -22,6 +23,7 @@ public class InputManager : MonoBehaviour {
     private bool _teleportAsked = false;
     private float _lastValidZRot = 0;
     private double _startAttackPressTime = 0;
+    private bool _aimCanceled;
 
     public bool usingSwitchPad;
     #endregion Fields
@@ -53,12 +55,18 @@ public class InputManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-
         TestComboInput();
         TestAimingInput();
         TestRecallInput();
         TestMagnetInput();
         TestDashInput();
+
+        // test jump input only if the jump button isn't used to cancel an aim
+        if(_aimCanceled == false)
+            TestJumpInput();
+
+        // reset boolean
+        _aimCanceled = false;
     }
 
     // Operations implying movements / physics
@@ -78,10 +86,19 @@ public class InputManager : MonoBehaviour {
 
     void TestComboInput()
     {
-        if(Input.GetButtonUp("Attack"))
+        if (_player.CanMove() == false)
+            return;
+
+        ComboManager.Inputs input;
+
+        if (Input.GetButtonDown("SongStarter"))
+        {
+            input = ComboManager.Inputs.SongStart;
+            _player.Combo.HandleInput(input);
+        }
+        else if(Input.GetButtonUp("Attack"))
         {
             float vAxis = Input.GetAxis("Vertical");
-            ComboManager.Inputs input;
 
             if (_startAttackPressTime + _minPressLongAttack < Time.time)
             {
@@ -126,12 +143,7 @@ public class InputManager : MonoBehaviour {
 
     private bool IsRunning()
     {
-        bool isRunning = Input.GetAxis("Run") < -0.8f;
-
-        if (isRunning == false)
-            isRunning = Input.GetButton("Run");
-
-        return isRunning;
+        return IsLeftTriggerPressed() || Input.GetButtonDown("Run");
     }
 
     void ApplyAimingInput()
@@ -184,6 +196,7 @@ public class InputManager : MonoBehaviour {
             if (Input.GetButtonDown("AimCancel"))
             {
                 _player.OnAimingEnd();
+                _aimCanceled = true;
             }
             else
             {
@@ -210,7 +223,7 @@ public class InputManager : MonoBehaviour {
 
     private void TestRecallInput()
     {
-        if(Input.GetButton("Recall") && _player.CanRecall())
+        if(Input.GetButtonDown("Recall") && _player.CanRecall())
         {
             _player.Recall();
         }
@@ -230,7 +243,9 @@ public class InputManager : MonoBehaviour {
 
     private void TestDashInput()
     {
-        if (Input.GetButtonDown("Dash") && _player.CanDash())
+        bool dashInput = IsRightTriggerPressed() || Input.GetButtonDown("Dash");
+
+        if (dashInput && _player.CanDash())
         {
             _player.Dash();
         }
@@ -316,6 +331,24 @@ public class InputManager : MonoBehaviour {
                 }
                 break;
         }
+    }
+
+    private void TestJumpInput()
+    {
+        if(Input.GetButtonDown("Jump"))
+        {
+            _player.Jump();
+        }
+    }
+
+    private bool IsRightTriggerPressed()
+    {
+        return Input.GetAxis("RightTrigger") > _minTriggerInput;
+    }
+
+    private bool IsLeftTriggerPressed()
+    {
+        return Input.GetAxis("LeftTrigger") < - _minTriggerInput;
     }
     #endregion
 }

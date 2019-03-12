@@ -15,6 +15,6 @@ MonoBehaviour:
   _name: Down01
   _damage: 10
   _ComboDelay: 2
-  _anim: 3
+  _anim: 4
   _linkedHits: []
   _linkedInputs: 

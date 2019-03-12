@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
-public class PlayerBehaviour : MonoBehaviour {
+public class PlayerBehaviour : Character {
 
     #region fields
     [SerializeField] private float _timeSlowRatio = 1;
     [SerializeField] private SpriteRenderer _aimArrowRenderer = null;
-    [SerializeField] private float _speed = 0.0f;
     [SerializeField] private float _runningSpeed = 0.0f;
     [SerializeField] private float _dashDistance = 0.0f;
     [SerializeField] private float _dashDuration = 0.0f;
@@ -38,10 +37,7 @@ public class PlayerBehaviour : MonoBehaviour {
     private ClampedAimEnum _clampedAim;
 
     static private PlayerBehaviour _instance = null;
-    private SpriteRenderer _spriteRenderer = null;
     private ArtefactBehaviour _artefact = null;
-    private Animator _anim = null;
-    private Collider2D _collider2D = null;
     private GameManager _gameManager = null;
     private Rigidbody2D _rBody2D = null;
     private int _walkHash = Animator.StringToHash("isWalking");
@@ -60,24 +56,9 @@ public class PlayerBehaviour : MonoBehaviour {
         get { return _instance; }
     }
 
-    public SpriteRenderer SpriteRenderer
-    {
-        get { return _spriteRenderer; }
-    }
-
     public bool IsAiming
     {
         get { return _isAiming; }
-    }
-
-    public float VerticalExtent
-    {
-        get { return _collider2D.bounds.extents.y; }
-    }
-
-    public float HorizontalExtent
-    {
-        get { return _collider2D.bounds.extents.x; }
     }
 
     public bool IsFree
@@ -95,20 +76,10 @@ public class PlayerBehaviour : MonoBehaviour {
         get { return _state == PlayerState.Tweening; }
     }
 
-    public Collider2D Coll2D
-    {
-        get { return _collider2D; }
-    }
-
     public ClampedAimEnum ClampedAim
     {
         get { return _clampedAim; }
         set { _clampedAim = value; }
-    }
-
-    public int Orientation
-    {
-        get { return _spriteRenderer.flipX ? -1 : 1; }
     }
 
     public ComboManager Combo
@@ -140,38 +111,26 @@ public class PlayerBehaviour : MonoBehaviour {
     }
 
     // Use this for initialization
-    void Start() {
+    protected override void Start() {
+        base.Start();
+        Debug.Log("Start enfant");
         _gameManager = GameManager.Instance;
-        _anim = GetComponent<Animator>();
-        _spriteRenderer = GetComponent<SpriteRenderer>();
         _artefact = ArtefactBehaviour.Instance;
-        _collider2D = GetComponent<Collider2D>();
         _rBody2D = GetComponent<Rigidbody2D>();
         _joint2D = GetComponent<Joint2D>();
         _baseGravity = _rBody2D.gravityScale;
         //_forcedMovements = new List<ForcedMovement>();
 
-        _aimArrowRenderer.transform.position = GetPlayerCenter();
+        _aimArrowRenderer.transform.position = GetCharacterCenter();
         ShowAimingArrow(false);
     }
 
     private void Update()
     {
-        if(Input.GetButtonDown("Attack"))
-        {
-            Jump();
-        }
     }
 
     private void FixedUpdate()
     {
-    }
-
-    private void Jump()
-    {
-        _rBody2D.velocity = Vector2.zero;
-        //AddForcedMovement(_jumpForce, Vector2.up, _jumpDuration);
-        _rBody2D.AddForce(_jumpForce * Vector2.up, ForceMode2D.Impulse);
     }
 
     private void OnArtefactDemagnetised()
@@ -185,12 +144,12 @@ public class PlayerBehaviour : MonoBehaviour {
     private void SetAimingState(bool isAiming)
     {
         _isAiming = isAiming;
-        _anim.SetBool(_aimingHash, isAiming);
+        Anim.SetBool(_aimingHash, isAiming);
     }
 
     private void ShowTweenRenderer(bool show)
     {
-        _spriteRenderer.enabled = !show;
+        SpriteRenderer.enabled = !show;
         _tweeningSprite.SetActive(show);
     }
 
@@ -283,7 +242,7 @@ public class PlayerBehaviour : MonoBehaviour {
 
         Vector2 dest;
         float effectiveDuration = 0;
-        Vector3 playerCenter = GetPlayerCenter();
+        Vector3 playerCenter = GetCharacterCenter();
 
         // Raycast in front of the player and check for obstacles
         RaycastHit2D hitH = Physics2D.Raycast(playerCenter, Vector2.right * Orientation, _dashDistance, GameManager.WALLS_AND_MAGNETS_LAYERMASK);
@@ -351,7 +310,7 @@ public class PlayerBehaviour : MonoBehaviour {
     {
         if (movement != Vector3.zero)
         {
-            float actualSpeed = isRuning ? _runningSpeed : _speed;
+            float actualSpeed = isRuning ? _runningSpeed : Speed;
             Vector3 newPos = transform.position + movement * actualSpeed * Time.deltaTime;
             transform.position = newPos; // Ajouter une fonction "ClampPosition" si nécessaire.
 
@@ -359,16 +318,16 @@ public class PlayerBehaviour : MonoBehaviour {
             //Debug.Log("Veloc = " + movement * actualSpeed * Time.deltaTime);
 
             // Handle animations
-            _anim.SetBool(_walkHash, true);
-            _anim.SetBool(_runHash, isRuning);
+            Anim.SetBool(_walkHash, true);
+            Anim.SetBool(_runHash, isRuning);
 
-            _spriteRenderer.flipX = movement.x < 0 ? true : false;
+            SpriteRenderer.flipX = movement.x < 0 ? true : false;
         }
         else
         {
             // Handle animations
-            _anim.SetBool(_walkHash, false);
-            _anim.SetBool(_runHash, false);
+            Anim.SetBool(_walkHash, false);
+            Anim.SetBool(_runHash, false);
         }
     }
 
@@ -435,16 +394,21 @@ public class PlayerBehaviour : MonoBehaviour {
         _artefact.Recall();
     }
 
+    public void Jump()
+    {
+        if(_grounded)
+        {
+            _rBody2D.velocity = Vector2.zero;
+            //AddForcedMovement(_jumpForce, Vector2.up, _jumpDuration);
+            _rBody2D.AddForce(_jumpForce * Vector2.up, ForceMode2D.Impulse);
+        }
+    }
+
     public float ComputeTweenDuration(float distance)
     {
         float duration = _baseTPTweeningDuration + distance * _distanceTweeningDurationRatio;
 
         return duration;
-    }
-
-    public Vector3 GetPlayerCenter()
-    {
-        return _spriteRenderer.sprite.bounds.center + transform.position;
     }
 
     #region Input Booleans

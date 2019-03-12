@@ -478,7 +478,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!95 &247174743
 Animator:
   serializedVersion: 3
@@ -540,7 +540,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 0.32, y: 0.64}
+  m_Size: {x: 0.64, y: 0.64}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
@@ -555,7 +555,7 @@ Transform:
   m_GameObject: {fileID: 247174742}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -51.28, y: 12.256384, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 20, y: 20, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 12
@@ -2462,9 +2462,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _comboState: 0
+  _songStarterInfo: {fileID: 11400000, guid: 2fb9fa44df8e8414a994e27563072908, type: 2}
   _initiatingHits:
+  - {fileID: 11400000, guid: 2fb9fa44df8e8414a994e27563072908, type: 2}
   - {fileID: 11400000, guid: 9076e5eb578d7d7448051cb84ff49b3c, type: 2}
-  _initiatingInputs: 00000000
+  _initiatingInputs: 0000000001000000
 --- !u!95 &1590243220
 Animator:
   serializedVersion: 3
@@ -2860,8 +2862,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _minPressLongAttack: 2
   _minStickInput: 0.3
+  _minTriggerInput: 0.2
   _aimClampOffset: 10
   usingSwitchPad: 0
+  _aimCanceled: 0
 --- !u!114 &1700356024
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3268,9 +3272,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 379c5a655708a6048bc80144b9d0deb0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _speed: 25
   _timeSlowRatio: 0.3
   _aimArrowRenderer: {fileID: 207504232}
-  _speed: 25
   _runningSpeed: 55
   _dashDistance: 30
   _dashDuration: 0.2
