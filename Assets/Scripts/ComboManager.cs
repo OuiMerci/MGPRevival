@@ -163,8 +163,6 @@ public class ComboManager : MonoBehaviour
 
     public void HandleInput(Inputs newInput)
     {
-        Debug.Log("Handle input : " + newInput + "    " + _comboState);
-
         switch(_comboState)
         {
             case ComboState.empty:
@@ -187,7 +185,6 @@ public class ComboManager : MonoBehaviour
 
     public void StartNewHit(HitInfo hit)
     {
-        Debug.Log("New hit");
         _currentHit = hit;
         _comboState = ComboState.tooEarly;
         _animator.Play(_animHashes[(int)hit.Animation]);
