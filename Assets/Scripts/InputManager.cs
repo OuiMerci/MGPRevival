@@ -17,6 +17,7 @@ public class InputManager : MonoBehaviour {
     static private ClampedAimEnum _clampedAim = ClampedAimEnum.none;
 
     static private InputManager _instance = null;
+    private GameManager _gManager = null;
     private const int MAX_RAYCAST_DISTANCE = 25;
     private PlayerBehaviour _player = null;
     private ArtefactBehaviour _artefact = null;
@@ -45,6 +46,7 @@ public class InputManager : MonoBehaviour {
     void Start () {
         _player = PlayerBehaviour.Instance;
         _artefact = ArtefactBehaviour.Instance;
+        _gManager = GameManager.Instance;
 
         //Debug.Log("Connected Gamepads");
         //for(int i=0; i < Input.GetJoystickNames().Length; i++)
@@ -55,32 +57,60 @@ public class InputManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        TestComboInput();
-        TestAimingInput();
-        TestRecallInput();
-        TestMagnetInput();
-        TestDashInput();
 
-        // test jump input only if the jump button isn't used to cancel an aim
-        if(_aimCanceled == false)
-            TestJumpInput();
+        switch(_gManager.CurrentState)
+        {
+            case GameManager.Gamestate.playing:
+                TestComboInput();
+                TestAimingInput();
+                TestRecallInput();
+                TestMagnetInput();
+                TestDashInput();
 
-        // reset boolean
-        _aimCanceled = false;
+                // test jump input only if the jump button isn't used to cancel an aim
+                if (_aimCanceled == false)
+                    TestJumpInput();
+
+                // reset boolean
+                _aimCanceled = false;
+                break;
+
+            case GameManager.Gamestate.song:
+
+                if (Input.GetButtonDown("SongStarter"))
+                {
+                    SongManager.EndSong();
+                }
+                break;
+
+            case GameManager.Gamestate.pause:
+                break;
+        }
     }
 
     // Operations implying movements / physics
     private void FixedUpdate()
     {
-        if (_teleportAsked == true)
+        switch (_gManager.CurrentState)
         {
-            _teleportAsked = false;
-            _player.TeleportToArtefact();
-        }
+            case GameManager.Gamestate.playing:
+                if (_teleportAsked == true)
+                {
+                    _teleportAsked = false;
+                    _player.TeleportToArtefact();
+                }
 
-        if (_player.CanMove())
-        {
-            ApplyMovementInput();
+                if (_player.CanMove())
+                {
+                    ApplyMovementInput();
+                }
+                break;
+
+            case GameManager.Gamestate.song:
+                break;
+
+            case GameManager.Gamestate.pause:
+                break;
         }
     }
 

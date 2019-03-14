@@ -302,6 +302,17 @@ public class PlayerBehaviour : Character {
         startTimeVariable = Time.time;
     }
 
+    // Ignore these events for now
+    protected override void OnSongStart(Enemy enemy)
+    {
+        return;
+    }
+
+    protected override void OnSongEnd()
+    {
+        return;
+    }
+
     /// <summary>
     /// Update player's position and handle animations.
     /// </summary>
@@ -401,6 +412,14 @@ public class PlayerBehaviour : Character {
             _rBody2D.velocity = Vector2.zero;
             //AddForcedMovement(_jumpForce, Vector2.up, _jumpDuration);
             _rBody2D.AddForce(_jumpForce * Vector2.up, ForceMode2D.Impulse);
+        }
+    }
+
+    public void TryStartSong(Enemy enemy)
+    {
+        if (enemy.IsWeakToSong)
+        {
+            SongManager.StartSong(enemy);
         }
     }
 

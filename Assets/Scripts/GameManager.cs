@@ -14,6 +14,14 @@ public class GameManager : MonoBehaviour {
     public const int wallsLayer = 1 << 8;
     public const int magnetLayer = 1 << 11;
     public const int WALLS_AND_MAGNETS_LAYERMASK = wallsLayer | magnetLayer;
+
+    public enum Gamestate
+    {
+        playing,
+        song,
+        pause
+    }
+    private Gamestate _currentState = Gamestate.playing;
     #endregion Fields
 
     #region properties
@@ -25,6 +33,11 @@ public class GameManager : MonoBehaviour {
     public int NextLevel
     {
         get { return _nextLevel; }
+    }
+
+    public Gamestate CurrentState
+    {
+        get { return _currentState; }
     }
     #endregion properties
 
@@ -83,6 +96,11 @@ public class GameManager : MonoBehaviour {
     public void UpdateTimeScale(float timeScale)
     {
         Time.timeScale = timeScale;
+    }
+
+    public void SetState(Gamestate newState)
+    {
+        _currentState = newState;
     }
     #endregion Methods
 }

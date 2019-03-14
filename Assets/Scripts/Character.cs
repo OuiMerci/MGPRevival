@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
-public class Character : MonoBehaviour
+public abstract class Character : GameEntity
 {
     #region fields
     [SerializeField] private float _speed = 0.0f;

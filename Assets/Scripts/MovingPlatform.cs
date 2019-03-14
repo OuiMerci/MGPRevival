@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
-public class MovingPlatform : MonoBehaviour
+public class MovingPlatform : GameEntity
 {
     [SerializeField] private float _duration;
     [SerializeField] private float _delay;
@@ -14,6 +14,7 @@ public class MovingPlatform : MonoBehaviour
     private List<GameObject> _children;
     private bool _updateArt;
     private ArtefactBehaviour _artefact;
+    private Sequence _seq;
 
     // Position Update
     private Vector3 _previousPos;
@@ -34,13 +35,13 @@ public class MovingPlatform : MonoBehaviour
         _artefact = ArtefactBehaviour.Instance;
 
         // Grab a free Sequence to use
-        Sequence mySequence = DOTween.Sequence();
+        _seq = DOTween.Sequence();
         // Add a movement tween at the beginning
-        mySequence.Append(transform.DOMove(_dest, _duration).SetDelay(_delay));
+        _seq.Append(transform.DOMove(_dest, _duration).SetDelay(_delay));
         // Add a a backward movement
-        mySequence.Append(transform.DOMove(_start, _duration).SetDelay(_delay));
+        _seq.Append(transform.DOMove(_start, _duration).SetDelay(_delay));
         // Add loop
-        mySequence.SetLoops(-1);
+        _seq.SetLoops(-1);
     }
 
     // Update is called once per frame
@@ -90,5 +91,15 @@ public class MovingPlatform : MonoBehaviour
         {
             _artefact.transform.position += _deltaPos;
         }
+    }
+
+    protected override void OnSongStart(Enemy enemy)
+    {
+        _seq.Pause();
+    }
+
+    protected override void OnSongEnd()
+    {
+        _seq.Play();
     }
 }

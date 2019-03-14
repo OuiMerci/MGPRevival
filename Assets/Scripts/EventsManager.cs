@@ -7,6 +7,12 @@ public class EventsManager : MonoBehaviour
     #region Events
     public delegate void Demagnetised();
     public static Demagnetised OnDemagnetised;
+
+    public delegate void SongStart(Enemy enemy);
+    public static SongStart OnSongStart;
+
+    public delegate void SongEnd();
+    public static SongEnd OnSongEnd;
     #endregion
 
     #region Methods
@@ -14,6 +20,18 @@ public class EventsManager : MonoBehaviour
     {
         if (OnDemagnetised != null)
             OnDemagnetised();
+    }
+
+    public static void FireSongStartEvent(Enemy enemy)
+    {
+        if (OnSongStart != null)
+            OnSongStart(enemy);
+    }
+
+    public static void FireSongEndEvent()
+    {
+        if (OnSongEnd != null)
+            OnSongEnd();
     }
     #endregion
 }
