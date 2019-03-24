@@ -11,6 +11,9 @@ public class EventsManager : MonoBehaviour
     public delegate void SongStart(Enemy enemy);
     public static SongStart OnSongStart;
 
+    public delegate void SongGameplayEnd();
+    public static SongGameplayEnd OnSongGameplayEnd;
+
     public delegate void SongEnd();
     public static SongEnd OnSongEnd;
     #endregion
@@ -26,6 +29,12 @@ public class EventsManager : MonoBehaviour
     {
         if (OnSongStart != null)
             OnSongStart(enemy);
+    }
+
+    public static void FireSongGameplayEndEvent()
+    {
+        if (OnSongGameplayEnd != null)
+            OnSongGameplayEnd();
     }
 
     public static void FireSongEndEvent()

@@ -4,10 +4,17 @@ using UnityEngine;
 
 public abstract class GameEntity : MonoBehaviour
 {
-    private void OnEnable()
+    protected virtual void OnEnable()
     {
+        Debug.Log("On enable test : " + gameObject.name);
         EventsManager.OnSongStart += OnSongStart;
         EventsManager.OnSongEnd += OnSongEnd;
+    }
+
+    protected virtual void OnDisable()
+    {
+        EventsManager.OnSongStart -= OnSongStart;
+        EventsManager.OnSongEnd -= OnSongEnd;
     }
 
     protected abstract void OnSongStart(Enemy enemy);

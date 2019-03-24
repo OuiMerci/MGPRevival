@@ -5,13 +5,29 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     #region Fields
-    [SerializeField] private float _zOffset;
+    [Header("Player Follow")]
+    [SerializeField] private float _zOffsetExploration;
     [SerializeField] private float _levelZ;
     [SerializeField] private float _smoothDuration;
     [SerializeField] private Transform _topBound;
     [SerializeField] private Transform _botBound;
     [SerializeField] private Transform _leftBound;
     [SerializeField] private Transform _rightBound;
+
+    [Header("Song Gameplay")]
+    [SerializeField] private float _zOffsetSong;
+    [SerializeField] private float _zoomDuration;
+    [SerializeField] private float _zoomStopDistance;
+    private Vector3 _positionBackup; // The camera position before the song started
+
+    enum Action
+    {
+        Following,
+        ZoomIn,
+        SongIdle,
+        ZoomOut
+    }
+    private Action _action;
 
     private Transform _player;
     private Vector3 _velocity;
@@ -22,6 +38,11 @@ public class CameraFollow : MonoBehaviour
     private float _minY;
     private float _maxX;
     private float _minX;
+
+    // Zoom variables
+    private float _currentZ;
+    private Vector3 _zoomTarget;
+
     #endregion
 
     #region Properties
@@ -67,6 +88,10 @@ public class CameraFollow : MonoBehaviour
     #endregion Properties
 
     #region Methods
+    private void OnDrawGizmos()
+    {
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -82,34 +107,135 @@ public class CameraFollow : MonoBehaviour
         FollowPlayerInstant();
     }
 
+    private void OnEnable()
+    {
+        EventsManager.OnSongStart += OnSongStart;
+        EventsManager.OnSongGameplayEnd += OnSongGameplayEnd;
+        EventsManager.OnSongEnd += OnSongEnd;
+    }
+
+    private void OnDisable()
+    {
+        EventsManager.OnSongStart -= OnSongStart;
+        EventsManager.OnSongGameplayEnd -= OnSongGameplayEnd;
+        EventsManager.OnSongEnd -= OnSongEnd;
+    }
+
     // Update is called once per frame
     void LateUpdate()
     {
-        UpdateMaxY();
-        UpdateMinY();
-        UpdateMaxX();
-        UpdateMinX();
+        switch(_action)
+        {
+            case Action.Following:
+                UpdateMaxY();
+                UpdateMinY();
+                UpdateMaxX();
+                UpdateMinX();
 
-        FollowPlayer();
+                FollowPlayer();
+                break;
+
+            case Action.ZoomIn:
+            case Action.ZoomOut:
+                UpdateCameraZoom();
+                break;
+
+            case Action.SongIdle:
+                break;
+        }
     }
 
     
-
+    ///// Follow Methods
     private void FollowPlayer()
     {
-        Vector3 desiredPos = ClampPosition(_player.position); //clamp the position
-        desiredPos = desiredPos + new Vector3(0, 0, _zOffset); // add the camera zOffset
+        transform.position = Vector3.SmoothDamp(transform.position, GetDesiredPosition(), ref _velocity, _smoothDuration); //apply smooth follow
+    }
 
-        transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref _velocity, _smoothDuration); //apply smooth follow
+    private Vector3 GetDesiredPosition()
+    {
+        Vector3 desiredPos = ClampPosition(_player.position); //clamp the position
+        desiredPos = desiredPos + new Vector3(0, 0, _zOffsetExploration); // add the camera zOffset
+
+        return desiredPos;
     }
 
     private void FollowPlayerInstant()
     {
         Vector3 desiredPos = ClampPosition(_player.position); //clamp the position
-        desiredPos = desiredPos + new Vector3(0, 0, _zOffset); // add the camera zOffset
+        desiredPos = desiredPos + new Vector3(0, 0, _zOffsetExploration); // add the camera zOffset
 
         transform.position = desiredPos; // Apply position without smooth
     }
+    ////
+
+    //// Song Methods
+    private void OnSongStart(Enemy enemy)
+    {
+        // Teleport the camera to its new position
+        Vector3 camDest = SongManager.SongZoneCenter.position + new Vector3(0, 0, _zOffsetExploration);
+        transform.position = camDest;
+
+        // Set the zoomTarget for the song gameplay
+        _zoomTarget = new Vector3(transform.position.x, transform.position.y, _zOffsetSong);
+
+        // Set the new Action
+        _action = Action.ZoomIn;
+    }
+    
+    private void OnSongGameplayEnd()
+    {
+        // Set the new zoom target
+        _zoomTarget = new Vector3(transform.position.x, transform.position.y, _zOffsetExploration);
+
+        // Set the new Action
+        _action = Action.ZoomOut;
+    }
+
+    private void OnSongEnd()
+    {
+        // Set the camera position to its position before the song started
+        Vector3 aimedPos = ClampPosition(SongActorsMover._playerPositionBackup);
+        aimedPos = new Vector3(aimedPos.x, aimedPos.y, _zOffsetExploration);
+        transform.position = aimedPos;
+
+        // Set the new action
+        _action = Action.Following;
+    }
+
+    private void UpdateCameraZoom()
+    {
+        // Move the Camera
+        transform.position = Vector3.SmoothDamp(transform.position, _zoomTarget, ref _velocity, _zoomDuration); //apply smooth follow
+
+        // Check if destination has been reached
+        CheckZoomDistance();
+    }
+
+    private void CheckZoomDistance()
+    {
+        if (Mathf.Abs(transform.position.z - _zoomTarget.z) <= _zoomStopDistance)
+        {
+            transform.position = _zoomTarget;
+
+            switch (_action)
+            {
+                case Action.ZoomIn:
+                    _action = Action.SongIdle;
+                    Debug.Log("Call movement complete in !!");
+
+                    SongManager.OnCameraReady();
+                    break;
+                case Action.ZoomOut:
+                    //Debug.Log("Call movement complete out!!");
+
+                    SongManager.OnCameraReady();
+                    break;
+            }
+        }
+    }
+
+    ////
 
     private Vector2 ClampPosition(Vector2 pos)
     {
@@ -134,6 +260,8 @@ public class CameraFollow : MonoBehaviour
             _camSize.y = Mathf.Abs(botLeftCorner.y - transform.position.y);
         }
     }
+
+    //private void DefineZoomTarget()
 
     private void UpdateMaxY()
     {

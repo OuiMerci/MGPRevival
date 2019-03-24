@@ -100,13 +100,15 @@ public class PlayerBehaviour : Character {
         _instance = this;
     }
 
-    private void OnEnable()
+    protected override void OnEnable()
     {
+        base.OnEnable();
         EventsManager.OnDemagnetised += OnArtefactDemagnetised;
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnEnable();
         EventsManager.OnDemagnetised -= OnArtefactDemagnetised;
     }
 
@@ -305,12 +307,13 @@ public class PlayerBehaviour : Character {
     // Ignore these events for now
     protected override void OnSongStart(Enemy enemy)
     {
-        return;
+        Debug.Log("song start tessssssssssssssst");
+        _rBody2D.isKinematic = true;
     }
 
     protected override void OnSongEnd()
     {
-        return;
+        _rBody2D.isKinematic = false;
     }
 
     /// <summary>

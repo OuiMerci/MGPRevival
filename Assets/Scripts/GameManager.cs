@@ -50,13 +50,24 @@ public class GameManager : MonoBehaviour {
     private void OnEnable()
     {
         SceneManager.sceneLoaded += OnLevelLoadingComplete;
+        EventsManager.OnSongStart += OnSongStart;
+        EventsManager.OnSongEnd += OnSongEnd;
     }
 
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnLevelLoadingComplete;
+        EventsManager.OnSongStart -= OnSongStart;
+        EventsManager.OnSongEnd -= OnSongEnd;
     }
 
+    private void OnSongStart(Enemy enemy)
+    {
+    }
+
+    private void OnSongEnd()
+    {
+    }
 
     void OnLevelLoadingComplete(Scene level, LoadSceneMode mode)
     {

@@ -658,6 +658,36 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!1 &371906242
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 371906243}
+  m_Layer: 0
+  m_Name: SongZoneCenter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &371906243
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 371906242}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 250, y: 36.450447, z: -4.3229933}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1356482849}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &440369418
 GameObject:
   m_ObjectHideFlags: 0
@@ -1892,6 +1922,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1356482849}
   - component: {fileID: 1356482848}
+  - component: {fileID: 1356482850}
   m_Layer: 0
   m_Name: SongManager
   m_TagString: Untagged
@@ -1911,6 +1942,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a531365007fdc4c48b4c1afcfd584230, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _songZoneCenter: {fileID: 371906243}
 --- !u!4 &1356482849
 Transform:
   m_ObjectHideFlags: 0
@@ -1921,10 +1953,26 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 7.5609546, y: 7.6495504, z: 0.037689015}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
+  m_Children:
+  - {fileID: 371906243}
   m_Father: {fileID: 0}
   m_RootOrder: 14
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1356482850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1356482847}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f6a38056d88dbf4a828a2270c1b2216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _actorsDistance: 50
+  _stopDistance: 0.2
+  _actorsMoveDuration: 0.5
 --- !u!1 &1383646039
 GameObject:
   m_ObjectHideFlags: 0
@@ -3214,9 +3262,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1799527579}
+  - component: {fileID: 1799527576}
   - component: {fileID: 1799527578}
   - component: {fileID: 1799527577}
-  - component: {fileID: 1799527576}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -3236,13 +3284,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73dba5296df78e24c8767de51f42570e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _zOffset: -100
+  _zOffsetExploration: -100
   _levelZ: 0
   _smoothDuration: 0.3
   _topBound: {fileID: 2130461192}
   _botBound: {fileID: 759983053}
   _leftBound: {fileID: 1130119100}
   _rightBound: {fileID: 2116089326}
+  _zOffsetSong: -50
+  _zoomDuration: 0.5
+  _zoomStopDistance: 0.2
 --- !u!81 &1799527577
 AudioListener:
   m_ObjectHideFlags: 0

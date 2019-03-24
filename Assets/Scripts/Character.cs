@@ -53,7 +53,6 @@ public abstract class Character : GameEntity
     // Use this for initialization
     protected virtual void Start()
     {
-        Debug.Log("Start parent");
         _anim = GetComponent<Animator>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _collider2D = GetComponent<Collider2D>();

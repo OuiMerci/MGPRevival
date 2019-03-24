@@ -79,7 +79,7 @@ public class InputManager : MonoBehaviour {
 
                 if (Input.GetButtonDown("SongStarter"))
                 {
-                    SongManager.EndSong();
+                    SongManager.EndSongGameplay();
                 }
                 break;
 
