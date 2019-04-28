@@ -9,8 +9,9 @@ public class SongActorsMover : MonoBehaviour
     {
         public Color c;
         public Vector3 p;
+        
     }
-
+    
     static public Vector3 _playerPositionBackup;
 
     private List<gm> _guizmosList;
